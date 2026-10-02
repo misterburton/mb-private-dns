@@ -21,6 +21,6 @@ build = Path(sys.argv[1])
   ]]></script>
   <choices-outline><line choice="main"/></choices-outline>
   <choice id="main" title="Private DNS" visible="false"><pkg-ref id="local.private-dns.package"/></choice>
-  <pkg-ref id="local.private-dns.package" version="2.0" onConclusion="none">component.pkg</pkg-ref>
+  <pkg-ref id="local.private-dns.package" version="__VERSION__" onConclusion="none">component.pkg</pkg-ref>
 </installer-gui-script>
-''')
+'''.replace('__VERSION__', sys.argv[2]))

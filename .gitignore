@@ -8,3 +8,6 @@ Releases/2.0/*.zip
 *.p8
 *.key
 .env
+
+Releases/2.1/*.pkg
+Releases/2.1/*.zip

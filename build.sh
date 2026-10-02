@@ -3,7 +3,7 @@ set -euo pipefail
 src="$(cd "$(dirname "$0")" && pwd)"
 build="${BUILD_DIR:-$src/build}"
 release="${RELEASE_DIR:-$src/Releases/Builds}"
-version='2.0'
+version='2.1'
 mkdir -p "$build" "$release"
 root="$build/root"
 scripts="$build/scripts"
@@ -53,7 +53,7 @@ for item in components:
 p.write_bytes(plistlib.dumps(components))
 PYCOMP
 pkgbuild --root "$root" --component-plist "$build/components.plist" --scripts "$scripts" --identifier local.private-dns.package --version "$version" --install-location / --ownership recommended "$build/component.pkg"
-python3 "$src/Packaging/distribution.py" "$build"
+python3 "$src/Packaging/distribution.py" "$build" "$version"
 if [ -n "${INSTALLER_IDENTITY:-}" ]; then
     productbuild --distribution "$build/Distribution.xml" --package-path "$build" --sign "$INSTALLER_IDENTITY" "$release/Private-DNS-$version-Apple-Silicon.pkg"
 else
@@ -67,6 +67,12 @@ if [ -n "${NOTARY_PROFILE:-}" ]; then
     xcrun stapler staple "$pkg"
     xcrun stapler validate "$pkg"
     spctl --assess --type install --verbose "$pkg"
+    ditto -c -k --sequesterRsrc --keepParent "$app" "$release/Private-DNS-Controls.zip"
+    xcrun notarytool submit "$release/Private-DNS-Controls.zip" --keychain-profile "$NOTARY_PROFILE" --wait
+    xcrun stapler staple "$app"
+    xcrun stapler validate "$app"
+    spctl --assess --type execute --verbose "$app"
+    ditto -c -k --sequesterRsrc --keepParent "$app" "$release/Private-DNS-Controls.zip"
     xcrun notarytool submit "$release/Uninstall-Private-DNS.zip" --keychain-profile "$NOTARY_PROFILE" --wait
     xcrun stapler staple "$uninstaller"
     ditto -c -k --sequesterRsrc --keepParent "$uninstaller" "$release/Uninstall-Private-DNS.zip"

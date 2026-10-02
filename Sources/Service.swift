@@ -81,7 +81,7 @@ final class Service {
         let mode = !lastError.isEmpty || (state.policy.enabled && (!healthy || !conflicts.isEmpty || overrides)) ? "attention" : state.policy.enabled ? "on" : "paused"
         return ["ok": lastError.isEmpty, "mode": mode, "enabled": state.policy.enabled, "pauseUntil": state.policy.until,
                 "healthy": healthy, "override": overrides, "conflicts": conflicts, "protectedServices": protected,
-                "totalServices": list.count, "error": lastError, "provider": "Cloudflare", "version": "2.0"]
+                "totalServices": list.count, "error": lastError, "provider": "Cloudflare", "version": "2.1"]
     }
     func handle(_ command: String) -> [String: Any] {
         guard ["status", "on", "pause 900", "pause 3600", "pause reboot"].contains(command) else { return ["ok": false, "error": "Unsupported command."] }
