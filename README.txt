@@ -7,14 +7,15 @@ Requires macOS 13 or later and an administrator account. Intel Macs are not supp
 
 INSTALL
 Open Private-DNS-2.0-Apple-Silicon.pkg and follow the macOS installer.
-Private DNS starts automatically. Look for DNS On in the menu bar. It does not open a control window at login.
+Private DNS starts automatically. Look for DoH On in the menu bar. It does not open a control window at login.
 The installer includes the DNS engine; Homebrew is not required.
+The published v2.0 installer predates the DoH labels and full Quit Private DNS action. These updates are in the current source and local controls update; a new notarized installer has not been published.
 
 AIRPLANE / HOTEL / PUBLIC WI-FI
-Before signing in to a Wi-Fi portal, open the DNS menu and choose Pause for 15 Minutes or Pause for 1 Hour.
+Before signing in to a Wi-Fi portal, open the DoH menu and choose Pause for 15 Minutes or Pause for 1 Hour.
 Sign in to Wi-Fi normally. Protection resumes automatically when the pause expires, or choose Resume Protection sooner.
 Pause Until Restart is also available. Every restart re-enables protection.
-Quitting the controls does not stop protection or the pause timer.
+Quit Private DNS restores network DNS and stops the app and its background processes, with macOS administrator authorization. Reopening the app or restarting your Mac enables protection again. Quit Controls (protection continues) closes only the menu controls; protection and pause timers continue.
 
 WHAT IT PROTECTS
 Encrypted DNS protects against network snooping, logging of plaintext DNS requests, and tampering with those requests in transit. This removes one common source of information about the sites and services you use.

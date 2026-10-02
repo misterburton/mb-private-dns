@@ -12,13 +12,15 @@ Install it once: it sends those requests to **Cloudflare over HTTPS**, starts au
 
 1. Download **[Private-DNS-2.0-Apple-Silicon.pkg](https://github.com/misterburton/mb-private-dns/releases/download/v2.0/Private-DNS-2.0-Apple-Silicon.pkg)** from [Releases](https://github.com/misterburton/mb-private-dns/releases/latest).
 2. Open the package and follow the installer, authorizing with your Mac administrator password when prompted.
-3. Look for **DNS On** in the menu bar. Protection runs in the background and re-enables at every restart.
+3. Look for **DoH On** in the menu bar. Protection runs in the background and re-enables at every restart.
 
 The installer and standalone uninstaller are Developer ID signed and notarized by Apple. If another DNS configuration conflicts, the installer stops rather than overwriting it.
 
+The published v2.0 installer predates the DoH labels and full **Quit Private DNS** action. These updates are in the current source and local controls update; a new notarized installer has not been published.
+
 ## Airplane, hotel, or public Wi-Fi
 
-Choose **Pause for 15 Minutes** or **Pause for 1 Hour** from the DNS menu, then complete the network’s sign-in page. Protection resumes automatically; select **Resume Protection** to turn it on sooner. **Pause Until Restart** is also available. Quitting the controls does not stop protection.
+Choose **Pause for 15 Minutes** or **Pause for 1 Hour** from the DoH menu, then complete the network’s sign-in page. Protection resumes automatically; select **Resume Protection** to turn it on sooner. **Pause Until Restart** is also available. Choose **Quit Private DNS** to restore network DNS and stop the app and its background processes. macOS asks for administrator authorization. Reopening the app or restarting your Mac enables protection again. **Quit Controls (protection continues)** closes only the menu controls.
 
 ## Uninstall
 
