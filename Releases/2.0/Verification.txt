@@ -1,0 +1,18 @@
+Private DNS 2.0 verification
+Test machine: Apple Silicon, macOS 27.0.1 (26A434).
+
+Final installer notarization: Accepted, 7d7fabfd-160f-4541-b427-012c101136c1.
+Final standalone uninstaller notarization: Accepted, 68e38abd-7cb9-43cc-bdef-62ff07dccf23.
+Installer and standalone uninstaller tickets stapled. Gatekeeper assessments passed as Notarized Developer ID.
+The final corrected package installed successfully on this Mac. Final live tests passed: bundled resolver health, timed pause restoring network DNS, pause persistence through a service restart, exactly one resolver after restart, resume, and macOS system DNS lookups.
+Bundled resolver, timed pause, restoration of network DNS, pause persistence through daemon restart, resume, and system DNS lookup checks passed.
+Installed menu controls process is running. Only the bundled resolver is running; no Homebrew resolver process is required by version 2.
+13 policy and recovery tests passed, including simulated new-boot reset and timed-pause expiry.
+The final installation was verified ON and healthy, with no detected DNS conflicts or default-resolver override. The controls application is running in the background.
+
+Limitations: An actual Mac reboot and an airplane Wi-Fi captive portal were not tested. Timed expiry was tested using explicit times in policy tests; a full 15-minute wait was not performed. The preceding uninstaller restored DNS and removed applications but left an orphan resolver process. The final source explicitly stops that exact process, and the related supervisor-restart cleanup passed a live test. The final uninstaller was not run again, to leave protection installed. Restoration logic was exercised by the live pause test and ownership/preservation unit tests. Computer-use automation could not attach to the custom utilities, so their visual controls were not independently inspected. Code signatures and Gatekeeper acceptance were checked for both installed apps.
+Other macOS versions and other Macs have not been tested. Start by sharing with a small group.
+
+Diagnosis: The original helper incorrectly used the .service bundle extension for a plain executable. An identical-byte A/B test reproduced termination with .service and successful execution without that extension. The fixed package uses local-private-dns-helper.
+Apple reference: https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/SysServices/Articles/providing.html
+Apple troubleshooting: https://developer.apple.com/forums/thread/706379

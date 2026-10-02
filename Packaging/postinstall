@@ -1,0 +1,35 @@
+#!/bin/bash
+set -euo pipefail
+base='/Library/Application Support/Private DNS'
+helper='/Library/PrivilegedHelperTools/local-private-dns-helper'
+daemon='/Library/LaunchDaemons/local.private-dns.resolver.plist'
+agent='/Library/LaunchAgents/local.private-dns.controls.plist'
+/usr/sbin/chown -R root:wheel "$base/Runtime" '/Applications/Private DNS.app' '/Applications/Uninstall Private DNS.app'
+/bin/chmod -R go-w "$base/Runtime" '/Applications/Private DNS.app' '/Applications/Uninstall Private DNS.app'
+/usr/sbin/chown root:wheel "$helper" "$daemon" "$agent"
+/bin/chmod 755 "$helper"
+/bin/chmod 644 "$daemon" "$agent"
+recover() {
+    echo 'Private DNS could not start. Restoring previous DNS settings.' >&2
+    /bin/launchctl bootout system/local.private-dns.resolver 2>/dev/null || true
+    "$helper" --restore || true
+    /usr/bin/pkill -f '^/Library/Application Support/Private DNS/Runtime/dnscrypt-proxy( |$)' 2>/dev/null || true
+}
+trap recover ERR
+/bin/launchctl enable system/local.private-dns.resolver
+/bin/launchctl bootstrap system "$daemon"
+ready=0
+for attempt in {1..20}; do
+    if "$helper" --command status >/dev/null 2>&1; then ready=1; break; fi
+    /bin/sleep 1
+done
+[ "$ready" -eq 1 ]
+# Retire version 1's inactive files. Recovery copies remain available.
+for name in start-resolver.sh dnscrypt-proxy.toml boot-session; do
+    if [ -f "$base/$name" ]; then /bin/mv "$base/$name" "$base/Upgrade backup/legacy-$name"; fi
+done
+consoleID=$(/usr/bin/stat -f '%u' /dev/console)
+if [ "$consoleID" -ge 500 ]; then /bin/launchctl bootstrap "gui/$consoleID" "$agent" || true; fi
+/bin/rm -f '/Library/PrivilegedHelperTools/local.private-dns.service'
+trap - ERR
+echo 'Private DNS is installed. The DNS menu opens quietly; no control window is shown.'

@@ -1,0 +1,10 @@
+build/
+release/
+Releases/Builds/
+Releases/2.0/*.pkg
+Releases/2.0/*.zip
+.DS_Store
+*.p12
+*.p8
+*.key
+.env

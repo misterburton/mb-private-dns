@@ -1,0 +1,37 @@
+#!/bin/bash
+set -euo pipefail
+scripts="$(cd "$(dirname "$0")" && pwd)"
+base='/Library/Application Support/Private DNS'
+if [ "$(/usr/sbin/sysctl -n hw.optional.arm64)" != 1 ]; then echo 'Private DNS requires an Apple Silicon Mac.' >&2; exit 1; fi
+if [ "${3:-/}" != '/' ]; then echo 'Install Private DNS on the current startup disk.' >&2; exit 1; fi
+if [ -L "$base" ]; then echo 'Unsafe application support path; installation stopped.' >&2; exit 1; fi
+if [ -e '/Applications/Private DNS.app' ]; then
+    identifier=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' '/Applications/Private DNS.app/Contents/Info.plist')
+    [ "$identifier" = 'local.private-dns.controls' ] || { echo 'Another app named Private DNS is installed.' >&2; exit 1; }
+fi
+"$scripts/PrivateDNSService" --preflight
+"$scripts/dnscrypt-proxy" -config "$scripts/dnscrypt-proxy.toml" -check
+/bin/mkdir -p "$base"
+/usr/sbin/chown root:wheel "$base"
+/bin/chmod 755 "$base"
+if [ ! -e "$base/state.plist" ] && [ -e "$base/Previous setup/network-preferences.plist" ]; then
+    "$scripts/PrivateDNSService" --import-legacy
+fi
+backup="$base/Upgrade backup"
+/bin/mkdir -p "$backup"
+/bin/chmod 700 "$backup"
+if [ -e '/Library/LaunchDaemons/local.private-dns.resolver.plist' ]; then
+    /bin/cp '/Library/LaunchDaemons/local.private-dns.resolver.plist' "$backup/previous-launchdaemon.plist"
+fi
+# Stop only this product's service and controls after all preflight checks passed.
+/bin/launchctl bootout system/local.private-dns.resolver 2>/dev/null || true
+/usr/bin/killall PrivateDNS 2>/dev/null || true
+for agent in /Users/*/Library/LaunchAgents/local.private-dns.controls.plist; do
+    [ -f "$agent" ] || continue
+    userID=$(/usr/bin/stat -f '%u' "$agent")
+    /bin/launchctl bootout "gui/$userID/local.private-dns.controls" 2>/dev/null || true
+    /bin/mv "$agent" "$backup/legacy-controls-$userID.plist"
+done
+consoleID=$(/usr/bin/stat -f '%u' /dev/console)
+if [ "$consoleID" -ge 500 ]; then /bin/launchctl bootout "gui/$consoleID/local.private-dns.controls" 2>/dev/null || true; fi
+exit 0
