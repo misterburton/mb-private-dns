@@ -1,0 +1,15 @@
+Private DNS 2.1 verification
+Test machine: Apple Silicon, macOS 27.0.1.
+
+Apple notarization accepted:
+Installer: d4b05328-8b42-43b1-8e20-ab423c59a180
+Controls app: d7b68836-7e89-4b3c-856e-5fde13957a5c
+Uninstaller: 3303196b-f441-41b9-ba74-153db099feb2
+
+Installer, controls app, and uninstaller tickets were stapled and validated. The installer signature was verified with pkgutil. Gatekeeper accepted the installer and both standalone apps as Notarized Developer ID. Both downloadable app ZIPs were extracted and independently checked for valid signatures, stapled tickets, and Gatekeeper acceptance. All four binary/source asset checksums passed.
+
+All 13 existing policy and recovery tests passed. Enabled, paused, attention, unavailable-service, explanation, text-layout, and scroll-position checks passed. The controls app launched successfully during controls-update verification. The new full quit lifecycle was previously tested live: DNS restoration, complete service/resolver stop, system DNS resolution, and healthy DoH restart passed.
+
+The current 2.1 installer execution check is pending macOS administrator authorization; this does not affect the completed signing, notarization, and downloadable artifact validation.
+
+Limitations: native UI automation timed out, so menu appearance and clicks were not visually verified. An actual Mac reboot and airplane Wi-Fi were not tested. The uninstaller was verified without running its removal interface.

@@ -9,4 +9,4 @@ Verified on this Mac on October 2, 2026.
 - All 13 existing policy and recovery checks passed, along with menu-state and text-layout checks.
 - The updated Developer ID signed controls app was installed in /Applications and launched successfully. Its signature and lifecycle resource were verified. The previous app remains in /Library/Application Support/Private DNS/Controls backup-2026-10-02-0955.app.
 
-Limitations: native UI automation timed out, so the appearance and menu clicks were not visually verified. An actual Mac reboot was not tested. The current local controls build is signed but has not been notarized; the local installer candidate is explicitly unsigned. The published v2.0 installer has not been replaced.
+Limitations: native UI automation timed out, so the appearance and menu clicks were not visually verified. An actual Mac reboot was not tested. The initial local controls build was signed but not notarized. Release completion is documented in [the Private DNS 2.1 verification notes](2.1/Verification.txt); the 2.1 installer and both apps are now signed, notarized, and stapled.
