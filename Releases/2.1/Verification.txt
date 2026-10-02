@@ -10,6 +10,8 @@ Installer, controls app, and uninstaller tickets were stapled and validated. The
 
 All 13 existing policy and recovery tests passed. Enabled, paused, attention, unavailable-service, explanation, text-layout, and scroll-position checks passed. The controls app launched successfully during controls-update verification. The new full quit lifecycle was previously tested live: DNS restoration, complete service/resolver stop, system DNS resolution, and healthy DoH restart passed.
 
-The current 2.1 installer execution check is pending macOS administrator authorization; this does not affect the completed signing, notarization, and downloadable artifact validation.
+The 2.1 installer executed successfully and upgraded this Mac. The installed app reports version 2.1, passes code-signature and Gatekeeper checks as Notarized Developer ID, and is running. The service reports version 2.1, enabled and healthy, with no conflicts or resolver override. Direct encrypted-resolver and system DNS lookups for example.com passed.
+
+A redundant post-install attempt to staple the installed controls app returned error 73, interrupting that verification script before its additional lifecycle checks. Recovery restarted the service and restored the controls login item. The released installer and standalone app ZIPs retain their validated stapled tickets. No second installation or authorization was performed.
 
 Limitations: native UI automation timed out, so menu appearance and clicks were not visually verified. An actual Mac reboot and airplane Wi-Fi were not tested. The uninstaller was verified without running its removal interface.
