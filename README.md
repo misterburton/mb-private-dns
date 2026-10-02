@@ -1,6 +1,10 @@
 # Private DNS
 
-Private DNS sends your Mac’s system DNS queries to **Cloudflare over HTTPS**, with a quiet menu-bar control and timed pauses for Wi-Fi sign-in. It starts at boot and includes its own DNS engine—no Homebrew required.
+**Keep your Mac’s DNS lookups private from the network you’re using.** Private DNS encrypts these requests so your internet provider and Wi-Fi operator can’t simply read or alter them in transit.
+
+DNS lookups reveal the domain names your Mac connects to. When sent unencrypted, your home ISP, mobile carrier when tethering, or office network administrator can read and log them, even when the website uses HTTPS or you use a private browsing window. Private DNS closes that privacy gap for lookups using your Mac’s system resolver.
+
+Install it once: it sends those requests to **Cloudflare over HTTPS**, starts automatically at boot, and gives you a simple menu-bar pause for airplane or hotel Wi-Fi. No Homebrew required.
 
 **Requirements:** Apple Silicon, macOS 13 or later, and an administrator account. Tested on macOS 27.0.1; Intel Macs are not supported.
 
@@ -24,9 +28,11 @@ Choose **Pause for 15 Minutes** or **Pause for 1 Hour** from the DNS menu, then 
 
 Use the uninstaller instead of dragging the app to Trash. An administrator-only recovery archive remains in `/Library/Application Support/Private DNS Uninstall Backup-<date>`.
 
-## Privacy and compatibility
+## Protection and compatibility
 
-Cloudflare receives your DNS queries. This does not provide anonymity, hide destination IP addresses, or block trackers. VPNs and apps with their own DNS may use another resolver. Pausing restores network-provided DNS, which may be unencrypted. Network transitions are checked periodically; this is not a guarantee against every DNS leak.
+Encrypted DNS protects against **network snooping, logging of plaintext DNS requests, and tampering with those requests in transit**. It reduces the information your network gets about the sites and services you use. [How DNS encryption protects you](https://developers.cloudflare.com/1.1.1.1/encryption/).
+
+Cloudflare resolves the queries and can see them. Networks may still identify destinations through IP addresses or other connection information, and monitoring software on a managed Mac can see more. VPNs or apps with their own DNS may take another path. Pausing temporarily restores network DNS; network changes can also create brief gaps in coverage.
 
 See [verification notes](Releases/2.0/Verification.txt) for tested behavior and remaining limitations, including untested airplane Wi-Fi and actual reboot behavior.
 

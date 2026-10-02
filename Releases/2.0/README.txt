@@ -1,4 +1,7 @@
-Private DNS 2.0 — Apple Silicon Macs
+Private DNS 2.0 ;  Apple Silicon Macs
+
+Keep your Mac's DNS lookups private from the network you're using. Private DNS encrypts system domain lookups so your ISP or Wi-Fi operator cannot simply read or alter those requests in transit.
+Unencrypted DNS can expose the domains you connect to to your home ISP, mobile carrier when tethering, or office network administrator, even when sites use HTTPS or your browser is in private mode. Install once to protect these lookups automatically, with a quick pause for Wi-Fi sign-in.
 
 Requires macOS 13 or later and an administrator account. Intel Macs are not supported.
 
@@ -13,10 +16,11 @@ Sign in to Wi-Fi normally. Protection resumes automatically when the pause expir
 Pause Until Restart is also available. Every restart re-enables protection.
 Quitting the controls does not stop protection or the pause timer.
 
-WHAT IT DOES
+WHAT IT PROTECTS
+Encrypted DNS protects against network snooping, logging of plaintext DNS requests, and tampering with those requests in transit. This removes one common source of information about the sites and services you use.
 It configures supported physical network services to use a local resolver that sends DNS queries to Cloudflare over HTTPS.
 It does not log your DNS queries locally. Cloudflare receives those queries as the selected DNS provider.
-It does not make browsing anonymous or hide destination IP addresses from your network. It is not a VPN or a blocker for ads, trackers, or malicious sites.
+Networks may still identify destinations from IP addresses or other connection information. Monitoring software on a managed Mac can see more. DNS privacy is one layer of protection, not anonymity.
 Applications using their own DNS and VPN-provided DNS may bypass this resolver. The menu indicates when another default resolver takes priority, but it is not a comprehensive leak detector.
 When enabled, it does not deliberately fall back to plaintext DNS if Cloudflare is unreachable. Pause protection to restore network DNS when necessary; queries may then be unencrypted.
 Newly enabled or connected supported network services are checked periodically, so this is not a firewall guarantee against every startup or network-transition DNS query.
