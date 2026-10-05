@@ -76,7 +76,7 @@ final class Service {
         let protected = list.filter { isOurs($0.config) }.map(\.name)
         let dns = run("/usr/sbin/scutil", ["--dns"])
         let routing = DNSRouting(output: dns.text, succeeded: dns.code == 0)
-        let overrides = state.policy.enabled && ["tailscale", "other", "mixed"].contains(routing.owner)
+        let overrides = state.policy.enabled && ["tailscale", "vpn", "other", "mixed"].contains(routing.owner)
         let baseMode = routing.mode(enabled: state.policy.enabled, healthy: healthy, conflicts: [], error: lastError)
         let normalMode = baseMode == "on" && !conflicts.isEmpty ? "partial" : baseMode
         let mode = readiness.mode(normalMode, enabled: state.policy.enabled, error: lastError,
@@ -88,7 +88,8 @@ final class Service {
                 "dnsOwner": routing.owner, "splitDNS": routing.splitDNS, "scopedDNS": routing.scopedDNS,
                 "tailscaleDNS": routing.tailscalePresent,
                 "tailscaleCoexistence": routing.tailscaleCoexistence,
-                "excludedServices": exclusions, "totalServices": list.count, "error": lastError, "provider": "Cloudflare", "version": "2.7"]
+                "vpnCoexistence": routing.vpnCoexistence, "defaultDNSRoutes": routing.defaultRoutes,
+                "excludedServices": exclusions, "totalServices": list.count, "error": lastError, "provider": "Cloudflare", "version": "2.8"]
     }
     func handle(_ command: String) -> [String: Any] {
         guard ["status", "on", "pause 900", "pause 3600", "pause reboot"].contains(command) else { return ["ok": false, "error": "Unsupported command."] }

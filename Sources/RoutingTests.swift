@@ -84,6 +84,19 @@ import Foundation
         check(connected.owner == "private-dns" && connected.splitDNS && connected.scopedDNS
               && connected.tailscaleCoexistence && mode(connected) == "on",
               "captured macOS Tailscale connection is informational, including dual-stack scoped and supplemental entries")
+        let vpnText = try! String(contentsOf: fixtureURL.deletingLastPathComponent().appendingPathComponent("proton-vpn.txt"), encoding: .utf8)
+        let vpn = parse(vpnText)
+        check(vpn.owner == "vpn" && mode(vpn) == "vpn-managed" && vpn.defaultRoutes == ["10.2.0.1 (utun20)"], "captured ProtonVPN default DNS is tunnel-managed")
+        check(mode(vpn, healthy: false) == "attention" && mode(vpn, error: "failed") == "attention", "VPN ownership cannot conceal resolver or service failures")
+        check(mode(vpn, enabled: false) == "paused", "VPN respects user pause")
+        check(parse(vpnText.replacingOccurrences(of: "utun20", with: "en0")).owner == "other", "private address alone does not prove VPN ownership")
+        check(parse(vpnText.replacingOccurrences(of: "utun20", with: "utunBAD")).owner == "other", "malformed interface name is not VPN evidence")
+        check(parse(vpnText.replacingOccurrences(of: "(Reachable)", with: "(Not Reachable)")).owner == "unknown", "unreachable VPN default remains unverified")
+        check(parse(vpnText.replacingOccurrences(of: "nameserver[0] : 10.2.0.1", with: "nameserver[0] : 10.2.0.1\n  nameserver[1] : 127.0.0.1")).owner == "mixed", "mixed default cannot hide behind tunnel interface")
+        let vpnScoped = foreignScoped + "\n  if_index : 41 (utun20)"
+        let vpnCoexist = parse(local + "\n" + vpnScoped)
+        check(vpnCoexist.vpnCoexistence && mode(vpnCoexist) == "on", "VPN interface DNS coexists with Private DNS default")
+        check(mode(parse(local + "\n" + vpnScoped + "\n" + foreignScoped)) == "attention", "VPN interface cannot conceal unrelated interface DNS")
         if CommandLine.arguments.contains("--live") {
             let result = run("/usr/sbin/scutil", ["--dns"])
             let routing = parse(result.text, result.code == 0)

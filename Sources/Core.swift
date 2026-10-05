@@ -40,6 +40,10 @@ struct ResolverEntry {
     var multicast = false
     var unavailable = false
     var port = 53
+    var interface = ""
+    var isTunnel: Bool {
+        interface.range(of: "^(utun|ipsec|ppp)[0-9]+$", options: .regularExpression) != nil
+    }
     var isDefault: Bool { !scoped && !multicast && (domain == "." || (!supplemental && domain.isEmpty)) }
     var isPrivateDNS: Bool { addresses == ["127.0.0.1"] && port == 53 }
     var isTailscale: Bool {
@@ -50,11 +54,13 @@ struct ResolverEntry {
 }
 
 struct DNSRouting {
-    let owner: String // private-dns, tailscale, other, mixed, unknown
+    let owner: String // private-dns, tailscale, vpn, other, mixed, unknown
     let splitDNS: Bool
     let scopedDNS: Bool
     let tailscalePresent: Bool
     let tailscaleCoexistence: Bool
+    let vpnCoexistence: Bool
+    let defaultRoutes: [String]
 
     init(output: String, succeeded: Bool) {
         var entries: [ResolverEntry] = []
@@ -79,10 +85,14 @@ struct DNSRouting {
                 } else if key == "options" { entry?.multicast = value.split(separator: " ").contains("mdns") }
                 else if key == "reach" { entry?.unavailable = value.contains("Not Reachable") }
                 else if key == "port" { entry?.port = Int(value) ?? -1 }
+                else if key == "if_index", let start = value.firstIndex(of: "("), let end = value[start...].firstIndex(of: ")") {
+                    entry?.interface = String(value[value.index(after: start)..<end])
+                }
             }
         }
         if let current = entry { entries.append(current) }
         let defaults = entries.filter(\.isDefault)
+        defaultRoutes = defaults.map { $0.addresses.joined(separator: ", ") + ($0.interface.isEmpty ? "" : " (\($0.interface))") }
         splitDNS = entries.contains { !$0.scoped && !$0.isDefault && !$0.multicast && !$0.addresses.isEmpty && !$0.isPrivateDNS }
         scopedDNS = entries.contains { $0.scoped && !$0.multicast && !$0.unavailable && !$0.addresses.isEmpty && !$0.isPrivateDNS }
         tailscalePresent = entries.contains(where: \.isTailscale)
@@ -91,6 +101,7 @@ struct DNSRouting {
         } else if defaults.allSatisfy(\.isPrivateDNS) { owner = "private-dns" }
         else if defaults.allSatisfy(\.isTailscale) { owner = "tailscale" }
         else if defaults.contains(where: { $0.addresses.contains("127.0.0.1") || $0.isTailscale }) { owner = "mixed" }
+        else if defaults.allSatisfy({ $0.isTunnel && $0.port == 53 }) { owner = "vpn" }
         else { owner = "other" }
         // A known Tailscale route is informational while our default is intact.
         // Its presence must never conceal another active interface resolver.
@@ -98,6 +109,10 @@ struct DNSRouting {
             && entries.contains { $0.isTailscale && !$0.unavailable }
             && !entries.contains { $0.scoped && !$0.multicast && !$0.unavailable
                 && !$0.addresses.isEmpty && !$0.isPrivateDNS && !$0.isTailscale }
+        vpnCoexistence = owner == "private-dns"
+            && entries.contains { $0.isTunnel && !$0.isPrivateDNS && !$0.isTailscale && !$0.unavailable && !$0.addresses.isEmpty }
+            && !entries.contains { $0.scoped && !$0.multicast && !$0.unavailable && !$0.addresses.isEmpty
+                && !$0.isPrivateDNS && !$0.isTailscale && !($0.isTunnel && $0.port == 53) }
     }
 
     func mode(enabled: Bool, healthy: Bool, conflicts: [String], error: String) -> String {
@@ -105,7 +120,8 @@ struct DNSRouting {
         if !enabled { return "paused" }
         if !healthy || !conflicts.isEmpty { return "attention" }
         if owner == "tailscale" { return "managed" }
-        if owner == "private-dns" && (!scopedDNS || tailscaleCoexistence) { return "on" }
+        if owner == "vpn" { return "vpn-managed" }
+        if owner == "private-dns" && (!scopedDNS || tailscaleCoexistence || vpnCoexistence) { return "on" }
         return "attention"
     }
 }
@@ -131,7 +147,7 @@ struct ResolverReadiness {
     }
     func mode(_ normal: String, enabled: Bool, error: String, conflicts: [String], owner: String, now: TimeInterval, routingReady: Bool = true) -> String {
         if normal == "attention" && enabled && error.isEmpty && conflicts.isEmpty
-            && routingReady && ["private-dns", "tailscale"].contains(owner) && isStarting(now: now) { return "starting" }
+            && routingReady && ["private-dns", "tailscale", "vpn"].contains(owner) && isStarting(now: now) { return "starting" }
         return normal
     }
 }

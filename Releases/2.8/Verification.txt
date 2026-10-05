@@ -1,0 +1,21 @@
+Private DNS 2.8 verification
+Apple Silicon, macOS 27.0.1. October 5, 2026.
+
+Changes:
+Default DNS on a recognized tunnel interface is reported as DNS managed by VPN, with DNS VPN in the menu bar. Details lists the default DNS servers and explains that the VPN controls these lookups, outside Private DNS's verified protection. Resume is disabled while already enabled. VPN routes alongside the Private DNS default are described separately. Actual resolver failures, service errors, unknown/mixed/unreachable default routes and unrelated interface DNS retain warnings. No provider, VPN configuration, or DNS forwarding policy changed.
+
+Verification:
+The connected ProtonVPN case was reproduced read-only: default DNS 10.2.0.1 on utun20, while the Private DNS resolver was healthy. That resolver snapshot is a regression fixture. Routing tests cover VPN ownership, false-positive avoidance, coexistence, mixed/unreachable defaults and failures. AppKit tests cover menu copy, disabled Resume, available Pause, warning retention and disconnect recovery. The complete policy, routing, readiness, network-preservation, AppKit and updater suites passed. The actual controls load in an AppKit harness; VPN Details was visually inspected. Apple Silicon targets compile.
+
+Limitations:
+Palo Alto VPN behavior remains unverified on the work Mac. Detection uses the DNS resolver's tunnel interface, not a VPN brand database or private IP address alone. This is not verification of the VPN's upstream DNS encryption. Installation, reboot, exit-node and airplane Wi-Fi behavior were not exercised in this release. No privileged live installation or DNS changes were performed during verification.
+
+Primary reference:
+https://developer.apple.com/documentation/networkextension/nednssettings/matchdomains
+
+Apple notarization accepted:
+Installer: a3d8caae-8906-49fe-b1b8-cc04cc5cdef3
+Controls: c2b8395e-ab5b-4d66-95bb-3f5c098c156e
+Uninstaller: e9c95faa-8e2d-4adf-bf7a-776dc62215a2
+Tickets stapled; Gatekeeper assessments passed. Final app ZIPs were independently extracted and signature/Gatekeeper verified, without launching the uninstaller.
+Packaging emitted the previously observed “write: Permission denied” warnings despite success. Signing, notarization and Gatekeeper checks passed; the warning cause remains unconfirmed.

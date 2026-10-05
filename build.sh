@@ -3,7 +3,7 @@ set -euo pipefail
 src="$(cd "$(dirname "$0")" && pwd)"
 build="${BUILD_DIR:-$src/build}"
 release="${RELEASE_DIR:-$src/Releases/Builds}"
-version='2.7'
+version='2.8'
 mkdir -p "$build" "$release"
 root="$build/root"
 scripts="$build/scripts"

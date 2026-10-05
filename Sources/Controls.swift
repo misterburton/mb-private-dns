@@ -105,6 +105,14 @@ final class Controls: NSObject, NSApplicationDelegate {
             message = healthy ? "Cloudflare DNS over HTTPS is configured and the local resolver is responding." : "DNS over HTTPS is configured, but the encrypted resolver isn't responding. Pause protection if you need to sign in to Wi-Fi."
             if let owner {
                 switch owner {
+                case "vpn":
+                    if mode == "vpn-managed" {
+                        headline.title = "DNS managed by VPN"
+                        status.button?.title = "DNS VPN"
+                    }
+                    detail.title = healthy ? "Your VPN handles default DNS lookups" : "Private DNS resolver is not responding"
+                    message = "macOS routes default DNS lookups through a VPN tunnel interface. Your VPN controls where those lookups go. Private DNS remains enabled, but those queries are outside its verified protection. This is an expected VPN configuration, not a reason to click Resume.\n\nPrivate DNS cannot verify the VPN's DNS provider or upstream encryption. It leaves VPN settings unchanged. When macOS routes DNS back to Private DNS, the status updates automatically."
+                    if !healthy { message += "\n\nThe Private DNS resolver is also not responding and needs attention before its protection can resume reliably." }
                 case "tailscale":
                     if mode == "managed" {
                         headline.title = "DNS managed by Tailscale"
@@ -134,17 +142,24 @@ final class Controls: NSObject, NSApplicationDelegate {
                         }
                         message += "\n\nTailscale also handles some DNS queries alongside Private DNS. This is an expected configuration. Private DNS verifies its own default route, but cannot verify the provider or encryption of queries handled by Tailscale."
                     }
+                    if value["vpnCoexistence"] as? Bool == true {
+                        if mode == "on" && healthy { detail.title = "Your VPN also handles some DNS queries" }
+                        message += "\n\nYour VPN supplies additional DNS routes alongside Private DNS. Queries using those routes are controlled by the VPN and are outside Private DNS's verified protection. This is expected; VPN settings are left unchanged."
+                    }
                     if !healthy { detail.title = "Encrypted resolver is not responding" }
                 case "unknown":
                     detail.title = "System DNS routing could not be verified"
                     message = "Private DNS cannot determine the default DNS route from macOS. A responding local resolver alone does not establish that your apps are using it."
                 default:
-                    detail.title = "Other DNS settings take priority"
+                    detail.title = "Default DNS bypasses Private DNS"
                     message = "macOS lists other or mixed default DNS servers. Private DNS cannot verify the provider or encryption for those routes. VPN and third-party DNS settings have been preserved."
                 }
             } else if value["override"] as? Bool == true {
                 // Preserve accurate behavior when newer controls talk to an older service.
                 message += "\n\nA VPN or another DNS resolver currently takes priority. Private DNS does not disconnect or change your VPN."
+            }
+            if let routes = value["defaultDNSRoutes"] as? [String], !routes.isEmpty {
+                message += "\n\nDefault DNS servers reported by macOS:\n" + routes.joined(separator: "\n")
             }
             if mode == "partial" {
                 headline.title = "DoH is on with exclusions"; status.button?.title = "DoH Partial"
@@ -174,7 +189,7 @@ final class Controls: NSObject, NSApplicationDelegate {
         """
         updateDetails()
         quitApp.isEnabled = !changing; quitControls.isEnabled = !changing
-        resume.isEnabled = !changing && (!enabled || (mode == "attention" && owner != "tailscale"))
+        resume.isEnabled = !changing && (!enabled || (mode == "attention" && owner != "tailscale" && owner != "vpn"))
         [pause15!, pause60!, pauseBoot!].forEach { $0.isEnabled = !changing && value["ok"] as? Bool == true }
     }
     func refresh() {
