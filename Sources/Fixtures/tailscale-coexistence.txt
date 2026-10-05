@@ -1,0 +1,89 @@
+DNS configuration
+
+resolver #1
+  search domain[0] : example-tailnet.ts.net
+  nameserver[0] : 100.100.100.100
+  nameserver[1] : fd7a:115c:a1e0::53
+  if_index : 38 (utun17)
+  flags    : Supplemental, Request A records, Request AAAA records
+  reach    : 0x00000003 (Reachable,Transient Connection)
+  order    : 100800
+
+resolver #2
+  nameserver[0] : 127.0.0.1
+  flags    : Request A records, Request AAAA records
+  reach    : 0x00030002 (Reachable,Local Address,Directly Reachable Address)
+  order    : 200000
+
+resolver #3
+  domain   : example-tailnet.ts.net.
+  nameserver[0] : 100.100.100.100
+  nameserver[1] : fd7a:115c:a1e0::53
+  if_index : 38 (utun17)
+  flags    : Supplemental, Request A records, Request AAAA records
+  reach    : 0x00000003 (Reachable,Transient Connection)
+  order    : 100801
+
+resolver #4
+  domain   : local
+  options  : mdns
+  timeout  : 5
+  flags    : Request A records
+  reach    : 0x00000000 (Not Reachable)
+  order    : 300000
+
+resolver #5
+  domain   : 254.169.in-addr.arpa
+  options  : mdns
+  timeout  : 5
+  flags    : Request A records
+  reach    : 0x00000000 (Not Reachable)
+  order    : 300200
+
+resolver #6
+  domain   : 8.e.f.ip6.arpa
+  options  : mdns
+  timeout  : 5
+  flags    : Request A records
+  reach    : 0x00000000 (Not Reachable)
+  order    : 300400
+
+resolver #7
+  domain   : 9.e.f.ip6.arpa
+  options  : mdns
+  timeout  : 5
+  flags    : Request A records
+  reach    : 0x00000000 (Not Reachable)
+  order    : 300600
+
+resolver #8
+  domain   : a.e.f.ip6.arpa
+  options  : mdns
+  timeout  : 5
+  flags    : Request A records
+  reach    : 0x00000000 (Not Reachable)
+  order    : 300800
+
+resolver #9
+  domain   : b.e.f.ip6.arpa
+  options  : mdns
+  timeout  : 5
+  flags    : Request A records
+  reach    : 0x00000000 (Not Reachable)
+  order    : 301000
+
+DNS configuration (for scoped queries)
+
+resolver #1
+  nameserver[0] : 127.0.0.1
+  if_index : 15 (en0)
+  flags    : Scoped, Request A records, Request AAAA records
+  reach    : 0x00000000 (Not Reachable)
+
+resolver #2
+  search domain[0] : example-tailnet.ts.net
+  nameserver[0] : 100.100.100.100
+  nameserver[1] : fd7a:115c:a1e0::53
+  if_index : 38 (utun17)
+  flags    : Scoped, Request A records, Request AAAA records
+  reach    : 0x00000003 (Reachable,Transient Connection)

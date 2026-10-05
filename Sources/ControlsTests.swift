@@ -66,6 +66,39 @@ import Cocoa
         finishCheck()
         precondition(calls == 3 && controls.updateItem.title == "Check for Updates…")
         print("PASS: launch check, duplicate prevention, daily deadline, quiet offline failure, retained update notice, sleep catch-up and cleared notice")
+        func coexist(_ mode: String, healthy: Bool = true) {
+            controls.show(["ok": true, "enabled": true, "healthy": healthy,
+                           "dnsOwner": "private-dns", "mode": mode, "splitDNS": true,
+                           "scopedDNS": true, "tailscaleDNS": true, "tailscaleCoexistence": true])
+        }
+        coexist("on")
+        precondition(controls.headline.title == "DoH is on" && controls.status.button?.title == "DoH On")
+        precondition(controls.detail.title == "Tailscale also handles some DNS queries")
+        precondition(!controls.resume.isEnabled && controls.summary.contains("cannot verify the provider or encryption"))
+        coexist("attention", healthy: false)
+        precondition(controls.status.button?.title == "DoH !")
+        precondition(controls.detail.title == "Encrypted resolver is not responding")
+        coexist("partial")
+        precondition(controls.status.button?.title == "DoH Partial" && !controls.resume.isEnabled)
+        coexist("on")
+        controls.showDetails()
+        let scroll = controls.scroll!
+        let document = controls.detailsDocument
+        precondition(controls.window!.isVisible && document.isFlipped)
+        precondition(document.subviews.contains { $0 is NSImageView })
+        precondition(controls.text.superview === document)
+        precondition(scroll.contentView.bounds.origin.y == 0)
+        scroll.contentView.scroll(to: NSPoint(x: 0, y: 120))
+        scroll.reflectScrolledClipView(scroll.contentView)
+        let position = scroll.contentView.bounds.origin.y
+        precondition(position > 72 && !scroll.documentVisibleRect.intersects(document.subviews.first { $0 is NSImageView }!.frame))
+        controls.updateDetails()
+        precondition(scroll.contentView.bounds.origin.y == position, "status refresh must preserve reading position")
+        controls.summary = "Short status"
+        controls.updateDetails()
+        precondition(scroll.contentView.bounds.origin.y == 0, "shorter contents must clamp the scroll position")
+        controls.window?.close()
+        print("PASS: Tailscale coexistence is informational; failures and exclusions remain visible; Details icon scrolls with text and refresh preserves reading position")
         NSStatusBar.system.removeStatusItem(controls.status)
         print("PASS: AppKit app loads; managed, failed, split, unknown, paused and recovered menu states render without opening windows or changing DNS")
     }

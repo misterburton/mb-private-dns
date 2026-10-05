@@ -1,0 +1,22 @@
+Private DNS 2.6 verification
+Apple Silicon, macOS 27.0.1. October 5, 2026.
+
+Changes:
+- The menu bar uses the approved globe-and-lock logo as an 18-point template image. macOS controls its appearance; status text is preserved.
+- Recognized Tailscale domain/interface routes coexist with a healthy Private DNS default without an attention badge. The menu explains that Tailscale handles some queries. Resume remains disabled while protection is on.
+- Unknown interface resolvers, resolver failures, and service errors retain warnings. Tailscale-handled DNS encryption remains unverified.
+- Details scrolls the icon and text together, retaining their initial size and layout. Refreshes preserve the reading position. The title bar remains the app-name heading.
+
+Verification:
+All policy/persistence, routing, network-preservation, AppKit menu/scrolling/scheduling and updater tests passed. A live connected Tailscale resolver snapshot reproduced the old attention state and is saved, with an anonymized domain, as a regression fixture. The new parser classifies it as coexistence with Private DNS still the default.
+An AppKit harness loaded the actual controls and bundled resources, verified the status image is an 18-point template, and rendered Details and the status button in light and dark appearances. The Apple Silicon app, helper and uninstaller compiled.
+
+Limitations:
+No live DNS settings, VPN settings, or providers were changed during verification. Installation of this release, reboot/login behavior, exit nodes, and airplane Wi-Fi were not exercised. Snapshot classification is not a packet-level leak test. The installed app remains 2.5 until the user updates.
+
+Apple notarization accepted:
+Installer: d51593dc-05a2-4707-adc2-a51597ebec68
+Controls: fae3a87d-6575-4ddd-9d54-608ccdb9da6b
+Uninstaller: aac3bc3a-eaec-400a-bd35-39287f3663c2
+Tickets stapled; Gatekeeper assessments passed. Final app ZIPs were independently extracted and verified without launching the uninstaller.
+Packaging emitted four previously observed “write: Permission denied” warnings while returning success. Signature, notarization and Gatekeeper checks passed; the warning cause remains unconfirmed.

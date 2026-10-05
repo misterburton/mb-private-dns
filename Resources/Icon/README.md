@@ -18,3 +18,9 @@ iconutil -c icns build/PrivateDNS.iconset -o Resources/Icon/PrivateDNS.icns
 ```
 
 The normal build copies the generated resources and license, so ImageMagick is not required to build the app.
+
+`StatusTemplate.png` renders the original unpadded SVG at 72 × 72 pixels for the 18-point menu-bar template image. macOS supplies its color. Regenerate with:
+
+```sh
+magick -background none -density 288 Resources/Icon/vpn-lock.svg -resize 72x72 Resources/Icon/StatusTemplate.png
+```

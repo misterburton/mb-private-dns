@@ -54,6 +54,7 @@ struct DNSRouting {
     let splitDNS: Bool
     let scopedDNS: Bool
     let tailscalePresent: Bool
+    let tailscaleCoexistence: Bool
 
     init(output: String, succeeded: Bool) {
         var entries: [ResolverEntry] = []
@@ -91,6 +92,12 @@ struct DNSRouting {
         else if defaults.allSatisfy(\.isTailscale) { owner = "tailscale" }
         else if defaults.contains(where: { $0.addresses.contains("127.0.0.1") || $0.isTailscale }) { owner = "mixed" }
         else { owner = "other" }
+        // A known Tailscale route is informational while our default is intact.
+        // Its presence must never conceal another active interface resolver.
+        tailscaleCoexistence = owner == "private-dns"
+            && entries.contains { $0.isTailscale && !$0.unavailable }
+            && !entries.contains { $0.scoped && !$0.multicast && !$0.unavailable
+                && !$0.addresses.isEmpty && !$0.isPrivateDNS && !$0.isTailscale }
     }
 
     func mode(enabled: Bool, healthy: Bool, conflicts: [String], error: String) -> String {
@@ -98,7 +105,7 @@ struct DNSRouting {
         if !enabled { return "paused" }
         if !healthy || !conflicts.isEmpty { return "attention" }
         if owner == "tailscale" { return "managed" }
-        if owner == "private-dns" && !scopedDNS { return "on" }
+        if owner == "private-dns" && (!scopedDNS || tailscaleCoexistence) { return "on" }
         return "attention"
     }
 }

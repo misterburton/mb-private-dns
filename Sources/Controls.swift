@@ -1,6 +1,10 @@
 import Cocoa
 import CoreServices
 
+final class DetailsDocumentView: NSView {
+    override var isFlipped: Bool { true }
+}
+
 final class Controls: NSObject, NSApplicationDelegate {
     var status: NSStatusItem!
     let menu = NSMenu()
@@ -22,6 +26,7 @@ final class Controls: NSObject, NSApplicationDelegate {
     var timer: Timer?
     var window: NSWindow?
     var scroll: NSScrollView?
+    let detailsDocument = DetailsDocumentView()
     let text = NSTextField(wrappingLabelWithString: "Checking DoH…")
     let queue = DispatchQueue(label: "PrivateDNS.controls")
     var changing = false
@@ -43,7 +48,7 @@ final class Controls: NSObject, NSApplicationDelegate {
         signal(SIGPIPE, SIG_IGN)
         status = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         status.button?.title = "DoH"
-        status.button?.image = NSImage(systemSymbolName: "network", accessibilityDescription: "Private DNS")
+        status.button?.image = AppIcon.statusBar()
         status.button?.imagePosition = .imageLeading
         menu.autoenablesItems = false
         headline.isEnabled = false; detail.isEnabled = false
@@ -114,6 +119,13 @@ final class Controls: NSObject, NSApplicationDelegate {
                         detail.title = "Some network interfaces use other DNS"
                         message += "\n\nOther DNS servers are available to interface-specific queries. Private DNS cannot verify their encryption."
                     }
+                    if value["tailscaleCoexistence"] as? Bool == true {
+                        if mode == "on" && healthy {
+                            detail.title = "Tailscale also handles some DNS queries"
+                        }
+                        message += "\n\nTailscale also handles some DNS queries alongside Private DNS. This is an expected configuration. Private DNS verifies its own default route, but cannot verify the provider or encryption of queries handled by Tailscale."
+                    }
+                    if !healthy { detail.title = "Encrypted resolver is not responding" }
                 case "unknown":
                     detail.title = "System DNS routing could not be verified"
                     message = "Private DNS cannot determine the default DNS route from macOS. A responding local resolver alone does not establish that your apps are using it."
@@ -239,17 +251,18 @@ final class Controls: NSObject, NSApplicationDelegate {
         if window == nil {
             let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 540, height: 412), styleMask: [.titled, .closable], backing: .buffered, defer: false)
             w.title = "Private DNS"; w.isReleasedWhenClosed = false; w.center()
-            let icon = NSImageView(frame: NSRect(x: 17, y: 332, width: 72, height: 72))
+            let icon = NSImageView(frame: NSRect(x: 0, y: 0, width: 72, height: 72))
             icon.image = AppIcon.template()
             icon.contentTintColor = .labelColor
             icon.imageScaling = .scaleProportionallyUpOrDown
             icon.setAccessibilityLabel("Private DNS globe and lock")
-            w.contentView?.addSubview(icon)
-            let scroller = NSScrollView(frame: NSRect(x: 25, y: 20, width: 490, height: 295))
+            detailsDocument.addSubview(icon)
+            let scroller = NSScrollView(frame: NSRect(x: 17, y: 20, width: 498, height: 384))
             scroller.hasVerticalScroller = true; scroller.autohidesScrollers = true
             scroller.drawsBackground = false
             text.font = .systemFont(ofSize: 14)
-            scroller.documentView = text
+            detailsDocument.addSubview(text)
+            scroller.documentView = detailsDocument
             w.contentView?.addSubview(scroller); scroll = scroller; window = w
         }
         updateDetails(); window?.makeKeyAndOrderFront(nil); NSApp.activate(ignoringOtherApps: true)
@@ -257,9 +270,14 @@ final class Controls: NSObject, NSApplicationDelegate {
     func updateDetails() {
         text.stringValue = summary
         guard let scroll else { return }
-        let width = scroll.contentSize.width
+        let origin = scroll.contentView.bounds.origin
+        let width = scroll.contentSize.width - 8
         let height = text.sizeThatFits(NSSize(width: width, height: .greatestFiniteMagnitude)).height
-        text.frame = NSRect(x: 0, y: 0, width: width, height: max(height, scroll.contentSize.height))
+        text.frame = NSRect(x: 8, y: 89, width: width, height: ceil(height))
+        detailsDocument.frame = NSRect(x: 0, y: 0, width: scroll.contentSize.width,
+                                      height: max(89 + ceil(height), scroll.contentSize.height))
+        scroll.contentView.scroll(to: NSPoint(x: 0, y: min(origin.y, max(0, detailsDocument.frame.height - scroll.contentSize.height))))
+        scroll.reflectScrolledClipView(scroll.contentView)
     }
     func authorizedServiceAction(_ action: String) throws {
         guard ["start", "stop"].contains(action),

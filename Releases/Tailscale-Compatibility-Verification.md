@@ -1,3 +1,21 @@
+# Tailscale compatibility: version 2.6
+
+## October 5, 2026 verification
+
+The reported warning was reproduced read-only while Tailscale was connected on macOS 27.0.1. The installed 2.5 service reported a healthy resolver, Private DNS as default, and an attention state caused by scoped DNS. The system snapshot contained Tailscale IPv4 and IPv6 supplemental, private-domain, and interface-scoped resolvers alongside the Private DNS default. An anonymized snapshot is saved in `Sources/Fixtures/tailscale-coexistence.txt` as a regression test.
+
+The updated parser treats recognized Tailscale routes alongside the Private DNS default as informational. It retains warnings for other active interface resolvers, unknown or mixed defaults, resolver failures, and service errors. The menu shows “DoH is on” and “Tailscale also handles some DNS queries,” with Resume disabled while protection is on. Details explains that Tailscale-handled queries are outside verified coverage. No provider or network settings changed.
+
+The Details icon and text now share one scrollable document. Their initial positions and icon size are preserved. Refreshes retain the reading position, clamping it if content becomes shorter. The window title remains the only app-name heading.
+
+`bash test.sh --live` verifies routing, persistence, network preservation, menu states, scrolling, and updater behavior. The live parser reports Private DNS as default, Tailscale coexistence, and healthy mode `on`. The service compiles for Apple Silicon. An AppKit harness loads the actual controls and bundled icon; light and dark Details renders were inspected. The UI test opens only Details and never runs startup, authorization, or DNS mutation commands.
+
+These changes are included in release 2.6. The installed 2.5 app was left unchanged during verification. End-to-end installation, exit-node routing, and packet-level upstream encryption have not been tested in this change.
+
+Primary documentation: [Tailscale DNS](https://tailscale.com/docs/reference/dns-in-tailscale), [Apple scroll document view](https://developer.apple.com/documentation/appkit/nsscrollview/documentview). Earlier investigation follows as historical context.
+
+---
+
 # Tailscale compatibility: 2.2 development candidate
 
 ## Diagnosis and scope
