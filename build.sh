@@ -3,7 +3,7 @@ set -euo pipefail
 src="$(cd "$(dirname "$0")" && pwd)"
 build="${BUILD_DIR:-$src/build}"
 release="${RELEASE_DIR:-$src/Releases/Builds}"
-version='2.6'
+version='2.7'
 mkdir -p "$build" "$release"
 root="$build/root"
 scripts="$build/scripts"
@@ -23,6 +23,7 @@ cp "$src/Resources/dnscrypt-proxy" "$runtime/dnscrypt-proxy"
 cp "$src/Resources/dnscrypt-proxy.toml" "$runtime/dnscrypt-proxy.toml"
 cp "$src/Resources/dnscrypt-proxy-LICENSE.txt" "$src/Resources/dnscrypt-proxy-README.txt" "$app/Contents/Resources/"
 cp "$src/Resources/Icon/PrivateDNS.icns" "$src/Resources/Icon/Template.png" "$app/Contents/Resources/"
+cp "$src/Resources/PrivacyInfo.xcprivacy" "$app/Contents/Resources/"
 cp "$src/Resources/Icon/StatusTemplate.png" "$app/Contents/Resources/"
 cp "$src/Resources/Icon/LICENSE.txt" "$app/Contents/Resources/Material-Icons-LICENSE.txt"
 cp "$src/Resources/controls-service.sh" "$app/Contents/Resources/controls-service.sh"

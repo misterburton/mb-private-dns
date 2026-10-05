@@ -31,6 +31,8 @@ final class Controls: NSObject, NSApplicationDelegate {
     let queue = DispatchQueue(label: "PrivateDNS.controls")
     var changing = false
     var refreshing = false
+    var refreshInterval: TimeInterval = 10
+    var lastRefreshAt: TimeInterval = -.infinity
     var summary = "Checking DoH…"
     func applicationDidFinishLaunching(_ notification: Notification) {
         LSRegisterURL(Bundle.main.bundleURL as CFURL, true)
@@ -38,9 +40,10 @@ final class Controls: NSObject, NSApplicationDelegate {
         // No window appears at installation, login, or app launch.
         refresh()
         checkForScheduledUpdates()
-        timer = Timer.scheduledTimer(withTimeInterval: 10, repeats: true) { [weak self] _ in
-            self?.refresh()
-            self?.checkForScheduledUpdates()
+        timer = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] _ in
+            guard let self else { return }
+            if ProcessInfo.processInfo.systemUptime - self.lastRefreshAt >= self.refreshInterval { self.refresh() }
+            self.checkForScheduledUpdates()
         }
     }
     func configureMenu() {
@@ -54,6 +57,7 @@ final class Controls: NSObject, NSApplicationDelegate {
         headline.isEnabled = false; detail.isEnabled = false
         menu.addItem(headline); menu.addItem(detail); menu.addItem(.separator())
         resume = add("Resume Protection", #selector(turnOn))
+        resume.isEnabled = false
         pause15 = add("Pause for 15 Minutes", #selector(pauseShort))
         pause60 = add("Pause for 1 Hour", #selector(pauseLong))
         pauseBoot = add("Pause Until Restart", #selector(pauseUntilRestart))
@@ -72,6 +76,7 @@ final class Controls: NSObject, NSApplicationDelegate {
     func show(_ value: [String: Any]) {
         let enabled = value["enabled"] as? Bool ?? false
         let mode = value["mode"] as? String ?? "attention"
+        refreshInterval = mode == "starting" ? 2 : 10
         let healthy = value["healthy"] as? Bool ?? false
         let until = value["pauseUntil"] as? Double ?? 0
         let errorText = value["error"] as? String ?? ""
@@ -89,6 +94,10 @@ final class Controls: NSObject, NSApplicationDelegate {
                 detail.title = "Resumes automatically at \(time)"
             } else { detail.title = "Resumes when you restart your Mac" }
             message = "Private DNS is paused. Your network or VPN controls DNS.\n\n\(detail.title). You can resume protection sooner from the DoH menu."
+        } else if mode == "starting" {
+            headline.title = "Starting Private DNS…"; status.button?.title = "DoH Starting…"
+            detail.title = "Connecting to the encrypted resolver…"
+            message = "Private DNS is starting and checking its encrypted resolver. Protection is not verified yet. This normally takes a few seconds; no action is needed. You can still pause protection to sign in to Wi-Fi."
         } else {
             headline.title = mode == "on" ? "DoH is on" : "DoH needs attention"
             status.button?.title = mode == "on" ? "DoH On" : "DoH !"
@@ -170,6 +179,7 @@ final class Controls: NSObject, NSApplicationDelegate {
     }
     func refresh() {
         guard !changing && !refreshing else { return }; refreshing = true
+        lastRefreshAt = ProcessInfo.processInfo.systemUptime
         queue.async {
             let value: [String: Any]
             do { value = try sendCommand("status") } catch { value = ["ok": false, "error": error.localizedDescription] }

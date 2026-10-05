@@ -38,11 +38,12 @@ final class Service {
     var listener: Int32 = -1
     var lastError = ""
     var conflicts: [String] = []
-    var healthy = false
-    var lastHealthCheck = Date.distantPast
+    var readiness = ResolverReadiness(began: ProcessInfo.processInfo.systemUptime)
+    var healthy: Bool { readiness.healthy }
     init() throws { state = try DNSState() }
     func startEngine() throws {
         if engine?.isRunning == true { return }
+        if engine != nil { readiness.failed = true; readiness.healthy = false; readiness.lastCheck = nil }
         // A forcibly restarted supervisor may leave Foundation's child process group alive.
         // Retire only this product's exact bundled resolver before starting its replacement.
         if engine == nil {
@@ -62,13 +63,12 @@ final class Service {
             state.policy = policy
             if changed { try state.save() }
             conflicts = try state.apply(enabled: policy.enabled)
-            if Date().timeIntervalSince(lastHealthCheck) > 30 {
+            if readiness.checkDue(now: ProcessInfo.processInfo.systemUptime) {
                 let answer = run("/usr/bin/dig", ["@127.0.0.1", "example.com", "A", "+time=2", "+tries=1", "+noall", "+comments", "+answer"])
-                healthy = answer.code == 0 && answer.text.contains("status: NOERROR") && answer.text.contains("IN\tA")
-                lastHealthCheck = Date()
+                readiness.record(healthy: answer.code == 0 && answer.text.contains("status: NOERROR") && answer.text.contains("IN\tA"), now: ProcessInfo.processInfo.systemUptime)
             }
             lastError = ""
-        } catch { lastError = error.localizedDescription }
+        } catch { lastError = error.localizedDescription; readiness.failed = true }
     }
     func snapshot() -> [String: Any] {
         let network = try? Network()
@@ -78,14 +78,17 @@ final class Service {
         let routing = DNSRouting(output: dns.text, succeeded: dns.code == 0)
         let overrides = state.policy.enabled && ["tailscale", "other", "mixed"].contains(routing.owner)
         let baseMode = routing.mode(enabled: state.policy.enabled, healthy: healthy, conflicts: [], error: lastError)
-        let mode = baseMode == "on" && !conflicts.isEmpty ? "partial" : baseMode
+        let normalMode = baseMode == "on" && !conflicts.isEmpty ? "partial" : baseMode
+        let mode = readiness.mode(normalMode, enabled: state.policy.enabled, error: lastError,
+                                  conflicts: conflicts, owner: routing.owner, now: ProcessInfo.processInfo.systemUptime,
+                                  routingReady: routing.mode(enabled: true, healthy: true, conflicts: [], error: "") != "attention")
         let exclusions = (network?.list(currentOnly: false) ?? []).filter { shouldPreserveDNS($0.config, saved: state.baseline[$0.id]) }.map(\.diagnostic)
         return ["ok": lastError.isEmpty, "mode": mode, "enabled": state.policy.enabled, "pauseUntil": state.policy.until,
                 "healthy": healthy, "override": overrides, "conflicts": conflicts, "protectedServices": protected,
                 "dnsOwner": routing.owner, "splitDNS": routing.splitDNS, "scopedDNS": routing.scopedDNS,
                 "tailscaleDNS": routing.tailscalePresent,
                 "tailscaleCoexistence": routing.tailscaleCoexistence,
-                "excludedServices": exclusions, "totalServices": list.count, "error": lastError, "provider": "Cloudflare", "version": "2.6"]
+                "excludedServices": exclusions, "totalServices": list.count, "error": lastError, "provider": "Cloudflare", "version": "2.7"]
     }
     func handle(_ command: String) -> [String: Any] {
         guard ["status", "on", "pause 900", "pause 3600", "pause reboot"].contains(command) else { return ["ok": false, "error": "Unsupported command."] }

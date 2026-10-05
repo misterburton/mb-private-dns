@@ -3,7 +3,7 @@ set -euo pipefail
 src="$(cd "$(dirname "$0")" && pwd)"
 build="$src/build/tests"
 mkdir -p "$build"
-for suite in Tests RoutingTests NetworkTests; do
+for suite in Tests RoutingTests NetworkTests ReadinessTests; do
     swiftc "$src/Sources/Core.swift" "$src/Sources/$suite.swift" -o "$build/$suite" -framework SystemConfiguration
     "$build/$suite" "$@"
 done

@@ -110,6 +110,32 @@ struct DNSRouting {
     }
 }
 
+// One grace period per service launch, measured with a monotonic clock.
+struct ResolverReadiness {
+    let began: TimeInterval
+    var healthy = false
+    var succeeded = false
+    var failed = false
+    var lastCheck: TimeInterval?
+    func isStarting(now: TimeInterval) -> Bool {
+        !succeeded && !failed && now - began < 30
+    }
+    func checkDue(now: TimeInterval) -> Bool {
+        guard let lastCheck else { return true }
+        return now - lastCheck >= (succeeded ? 30 : 5)
+    }
+    mutating func record(healthy: Bool, now: TimeInterval) {
+        self.healthy = healthy
+        succeeded = succeeded || healthy
+        lastCheck = now
+    }
+    func mode(_ normal: String, enabled: Bool, error: String, conflicts: [String], owner: String, now: TimeInterval, routingReady: Bool = true) -> String {
+        if normal == "attention" && enabled && error.isEmpty && conflicts.isEmpty
+            && routingReady && ["private-dns", "tailscale"].contains(owner) && isStarting(now: now) { return "starting" }
+        return normal
+    }
+}
+
 struct DNSService {
     let id: String
     let name: String

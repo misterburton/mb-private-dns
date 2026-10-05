@@ -1,0 +1,23 @@
+Private DNS 2.7 verification
+Apple Silicon, macOS 27.0.1. October 5, 2026.
+
+Startup UX:
+- The service exposes a bounded starting state while awaiting its first successful encrypted-resolver health check. The menu shows DoH Starting… and Connecting to the encrypted resolver… without an exclamation.
+- The grace period uses monotonic elapsed time and ends at 30 seconds, on first success, or on an explicit service error/process exit. It cannot reset by reopening the menu. Later failures never re-enter this grace period.
+- Initial readiness checks retry at the first service tick at least five seconds after the last check, rather than waiting 30 seconds. The menu polls every two seconds during startup. After first success, health checks return to 30 seconds and normal menu polling to 10 seconds.
+- Resume is disabled during startup. Pause remains available for Wi-Fi sign-in. Unknown DNS routes and configuration conflicts remain warnings.
+- No provider, fallback resolver, DNS configuration policy, or installer authorization changes.
+
+Verification:
+All policy, routing, network preservation, readiness, AppKit menu/scrolling/scheduling and updater suites passed. Deterministic readiness tests cover first failure, retry timing, exact deadline, recovery, later failure, process error, pause and routing conflicts. The AppKit harness loads the actual controls and bundled icon and renders startup Details and status text. Apple Silicon targets compile.
+
+Apple documentation reviewed: ProcessInfo.systemUptime and required-reason API documentation. The app declares SystemBootTime reason 35F9.1 for local elapsed-time/timer calculations in its privacy manifest. Uptime is not transmitted.
+
+Limitations: the installed app and DNS service were not replaced during verification. The startup sequence is tested through deterministic readiness and actual AppKit UI tests, not a live privileged install or reboot. Exit-node and airplane Wi-Fi behavior remain unverified. An in-flight DNS probe may briefly delay a menu response; startup status is updated on the next poll.
+
+Apple notarization accepted:
+Installer: 9be0cdf4-4e14-4b2d-9b9d-f82c75435105
+Controls: 058495a9-88de-4be9-bb3f-85163653c1c4
+Uninstaller: 7f248733-db9e-46ab-80aa-9c5cde61f239
+Tickets stapled; Gatekeeper assessments passed. Final app ZIPs were independently extracted and signature/Gatekeeper verified, without launching the uninstaller.
+Packaging emitted the previously observed four “write: Permission denied” warnings despite success. Signing, notarization and Gatekeeper checks passed; the warning cause remains unconfirmed.

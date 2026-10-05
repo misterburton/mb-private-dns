@@ -26,3 +26,6 @@ Releases/2.5/*.zip
 
 Releases/2.6/*.pkg
 Releases/2.6/*.zip
+
+Releases/2.7/*.pkg
+Releases/2.7/*.zip
