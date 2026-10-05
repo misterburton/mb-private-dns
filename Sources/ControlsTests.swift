@@ -34,6 +34,10 @@ import Cocoa
         precondition(controls.window == nil)
         app.finishLaunching()
         RunLoop.current.run(until: Date().addingTimeInterval(0.2))
+        controls.show(["ok": true, "enabled": true, "healthy": true, "mode": "partial", "dnsOwner": "private-dns", "excludedServices": ["Ethernet [service-id] • en7\nLocations: Show [location-id]\nDNS: 192.168.3.1"]])
+        precondition(controls.status.button?.title == "DoH Partial")
+        precondition(controls.summary.contains("192.168.3.1") && controls.summary.contains("service-id") && controls.summary.contains("Keep these settings"))
+        print("PASS: partial coverage shows preserved network details without instructing deletion")
         let now = Date()
         var calls = 0
         let candidate = UpdateCandidate(version: "99.0", asset: .init(name: "unused", browser_download_url: "unused", size: 1, digest: nil))

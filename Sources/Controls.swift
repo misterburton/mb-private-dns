@@ -1,4 +1,5 @@
 import Cocoa
+import CoreServices
 
 final class Controls: NSObject, NSApplicationDelegate {
     var status: NSStatusItem!
@@ -27,6 +28,7 @@ final class Controls: NSObject, NSApplicationDelegate {
     var refreshing = false
     var summary = "Checking DoH…"
     func applicationDidFinishLaunching(_ notification: Notification) {
+        LSRegisterURL(Bundle.main.bundleURL as CFURL, true)
         configureMenu()
         // No window appears at installation, login, or app launch.
         refresh()
@@ -123,8 +125,16 @@ final class Controls: NSObject, NSApplicationDelegate {
                 // Preserve accurate behavior when newer controls talk to an older service.
                 message += "\n\nA VPN or another DNS resolver currently takes priority. Private DNS does not disconnect or change your VPN."
             }
+            if mode == "partial" {
+                headline.title = "DoH is on with exclusions"; status.button?.title = "DoH Partial"
+                detail.title = "Custom DNS preserved • See Details"
+            }
             let conflicts = value["conflicts"] as? [String] ?? []
-            if !conflicts.isEmpty { message += "\n\nOther DNS settings were preserved for: " + conflicts.joined(separator: ", ") + ". Resolve those settings before enabling protection there." }
+            if value["excludedServices"] == nil && !conflicts.isEmpty { message += "\n\nOther DNS settings were preserved for: " + conflicts.joined(separator: ", ") + ". These services are outside Private DNS protection." }
+        }
+        if let excluded = value["excludedServices"] as? [String], !excluded.isEmpty {
+            message += "\n\nPreserved custom DNS (excluded from Private DNS protection):\n\n" + excluded.joined(separator: "\n\n")
+            message += "\n\nKeep these settings if they are needed for your devices or work networks. Disabled services and services outside the current location are listed for reference."
         }
         message += "\n\nPrivate DNS re-enables at every restart. Timed pauses also expire while the controls are closed; after sleep, they expire when the service runs again. VPN DNS may still take priority."
         status.button?.toolTip = message

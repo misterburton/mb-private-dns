@@ -15,8 +15,6 @@ func preflight() throws {
     if let bytes = profiles.text.data(using: .utf8), let data = try? PropertyListSerialization.propertyList(from: bytes, format: nil), containsDNSProfile(data) {
         throw error("An encrypted-DNS or DNS-proxy configuration profile is already installed. Disable or remove that configuration before installing Private DNS. It has not been changed.")
     }
-    let existing = try Network().list(currentOnly: false).filter { !servers($0.config).isEmpty && !(knownInstall && isOurs($0.config)) }
-    if !existing.isEmpty { throw error("Existing manual DNS settings found for: \(existing.map(\.name).joined(separator: ", ")). Private DNS will not overwrite them. Restore automatic DNS or remove the previous tool first.") }
     let ownDaemon = run("/bin/launchctl", ["print", "system/" + daemonLabel])
     let runningOwnService = knownInstall && ownDaemon.code == 0 && ownDaemon.text.contains("state = running")
     if !runningOwnService {
@@ -79,12 +77,14 @@ final class Service {
         let dns = run("/usr/sbin/scutil", ["--dns"])
         let routing = DNSRouting(output: dns.text, succeeded: dns.code == 0)
         let overrides = state.policy.enabled && ["tailscale", "other", "mixed"].contains(routing.owner)
-        let mode = routing.mode(enabled: state.policy.enabled, healthy: healthy, conflicts: conflicts, error: lastError)
+        let baseMode = routing.mode(enabled: state.policy.enabled, healthy: healthy, conflicts: [], error: lastError)
+        let mode = baseMode == "on" && !conflicts.isEmpty ? "partial" : baseMode
+        let exclusions = (network?.list(currentOnly: false) ?? []).filter { shouldPreserveDNS($0.config, saved: state.baseline[$0.id]) }.map(\.diagnostic)
         return ["ok": lastError.isEmpty, "mode": mode, "enabled": state.policy.enabled, "pauseUntil": state.policy.until,
                 "healthy": healthy, "override": overrides, "conflicts": conflicts, "protectedServices": protected,
                 "dnsOwner": routing.owner, "splitDNS": routing.splitDNS, "scopedDNS": routing.scopedDNS,
                 "tailscaleDNS": routing.tailscalePresent,
-                "totalServices": list.count, "error": lastError, "provider": "Cloudflare", "version": "2.4"]
+                "excludedServices": exclusions, "totalServices": list.count, "error": lastError, "provider": "Cloudflare", "version": "2.5"]
     }
     func handle(_ command: String) -> [String: Any] {
         guard ["status", "on", "pause 900", "pause 3600", "pause reboot"].contains(command) else { return ["ok": false, "error": "Unsupported command."] }
@@ -164,7 +164,7 @@ final class Service {
                 withExtendedLifetime(service) { dispatchMain() }
             } else if args == ["--preflight"] {
                 guard geteuid() == 0 else { throw error("Installation checks require administrator privileges.") }
-                try preflight(); print("No conflicting DNS settings found.")
+                try preflight(); print("Installation checks passed. Existing manual DNS will be preserved.")
             } else if args == ["--import-legacy"] {
                 guard geteuid() == 0 else { throw error("Migration requires administrator privileges.") }
                 try DNSState().importLegacy(); print("Previous DNS settings imported.")

@@ -20,7 +20,9 @@ daemon = {'Label': 'local.private-dns.resolver',
           'RunAtLoad': True, 'KeepAlive': True, 'ThrottleInterval': 10, 'ProcessType': 'Background',
           'StandardOutPath': '/var/log/private-dns.log', 'StandardErrorPath': '/var/log/private-dns.log'}
 agent = {'Label': 'local.private-dns.controls',
-         'ProgramArguments': ['/usr/bin/open', '-g', '-a', '/Applications/Private DNS.app', '--args', '--background'],
+         'ProgramArguments': ['/Applications/Private DNS.app/Contents/MacOS/PrivateDNS', '--background'],
          'RunAtLoad': True, 'LimitLoadToSessionType': 'Aqua', 'ProcessType': 'Interactive'}
+for job in (daemon, agent):
+    job['AssociatedBundleIdentifiers'] = ['local.private-dns.controls']
 for path, data in [('Library/LaunchDaemons/local.private-dns.resolver.plist', daemon), ('Library/LaunchAgents/local.private-dns.controls.plist', agent)]:
     (root / path).write_bytes(plistlib.dumps(data))

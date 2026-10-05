@@ -3,11 +3,11 @@ set -euo pipefail
 src="$(cd "$(dirname "$0")" && pwd)"
 build="${BUILD_DIR:-$src/build}"
 release="${RELEASE_DIR:-$src/Releases/Builds}"
-version='2.4'
+version='2.5'
 mkdir -p "$build" "$release"
 root="$build/root"
 scripts="$build/scripts"
-rm -rf "$root" "$scripts"
+rm -rf "$root" "$scripts" "$build/installer-resources"
 mkdir -p "$root/Applications" "$root/Library/LaunchDaemons" "$root/Library/LaunchAgents" "$root/Library/PrivilegedHelperTools" "$scripts"
 app="$root/Applications/Private DNS.app"
 uninstaller="$root/Applications/Uninstall Private DNS.app"
@@ -55,11 +55,13 @@ for item in components:
 p.write_bytes(plistlib.dumps(components))
 PYCOMP
 pkgbuild --root "$root" --component-plist "$build/components.plist" --scripts "$scripts" --identifier local.private-dns.package --version "$version" --install-location / --ownership recommended "$build/component.pkg"
+mkdir -p "$build/installer-resources"
+cp "$src/Packaging/ReadMe.html" "$build/installer-resources/ReadMe.html"
 python3 "$src/Packaging/distribution.py" "$build" "$version"
 if [ -n "${INSTALLER_IDENTITY:-}" ]; then
-    productbuild --distribution "$build/Distribution.xml" --package-path "$build" --sign "$INSTALLER_IDENTITY" "$release/Private-DNS-$version-Apple-Silicon.pkg"
+    productbuild --resources "$build/installer-resources" --distribution "$build/Distribution.xml" --package-path "$build" --sign "$INSTALLER_IDENTITY" "$release/Private-DNS-$version-Apple-Silicon.pkg"
 else
-    productbuild --distribution "$build/Distribution.xml" --package-path "$build" "$release/Private-DNS-$version-Apple-Silicon-UNSIGNED.pkg"
+    productbuild --resources "$build/installer-resources" --distribution "$build/Distribution.xml" --package-path "$build" "$release/Private-DNS-$version-Apple-Silicon-UNSIGNED.pkg"
 fi
 ditto -c -k --sequesterRsrc --keepParent "$uninstaller" "$release/Uninstall-Private-DNS.zip"
 if [ -n "${NOTARY_PROFILE:-}" ]; then

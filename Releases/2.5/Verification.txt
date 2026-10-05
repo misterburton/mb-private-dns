@@ -1,0 +1,27 @@
+Private DNS 2.5 verification
+Apple Silicon, macOS 27.0.1. October 5, 2026.
+
+Beta feedback fixes:
+- The login agent launches the signed Private DNS executable directly instead of /usr/bin/open. Both launchd jobs include AssociatedBundleIdentifiers for local.private-dns.controls. Controls registers its bundle with Launch Services at launch.
+- Manual DNS no longer blocks installation. Only eligible services are configured. Custom services, including restored manual baselines and later third-party changes, are preserved.
+- Details identifies excluded services with service name and ID, BSD interface, enabled/current-location status, network location names and IDs, and DNS addresses. Orphaned services are identified explicitly. When the default resolver is protected but current services have exclusions, the menu shows DoH Partial. Other default resolvers still trigger a coverage warning.
+- The installer explains preservation and genuine blockers on its Read Me page. Profile and local-port safety checks remain before installation mutations. Root-only checks still run in preinstall, not the early wizard. Apple's deprecated external-script early-check mechanism was evaluated and excluded because productbuild warns it may break future installation/notarization.
+
+Passed: policy/persistence, resolver-routing, update, and AppKit menu/scheduling suites; six additional network-preservation scenarios and partial-coverage UI checks. The network tests execute the real apply logic with intercepted writes and commits: mixed automatic/manual services, duplicate names, orphan identification, changed settings, all-manual services, restored baselines, and pause/uninstall restoration. No live network services were created, deleted, or altered.
+
+Both generated startup jobs reference this app and target executables whose signing Team ID matches the app. The installer resource includes ReadMe.html and does not enable deprecated external scripts. AppKit controls load in the menu test.
+
+Limitations: the tester's actual hidden entries and macOS Login Items labels were not reproduced or verified on their Mac. macOS may cache old background-item labels; no global background-item database reset is performed. An actual upgrade/login/reboot and the tester's show/Thunderbolt workflow require beta verification. Installer, uninstaller, and live DNS configuration were not exercised destructively. Existing Tailscale/exit-node and airplane Wi-Fi limitations remain.
+
+Primary references:
+https://developer.apple.com/documentation/servicemanagement/updating-helper-executables-from-earlier-versions-of-macos
+https://support.apple.com/guide/deployment/depdca572563/web
+https://developer.apple.com/documentation/installer_js/system/1812364-run
+Local macOS launchd.plist manual (AssociatedBundleIdentifiers).
+
+Apple notarization accepted:
+Installer: 2cbdef03-0d7b-4c7d-bb24-11f1769c55ba
+Controls: 6a7307de-7837-4536-a481-bdd82b02ecc3
+Uninstaller: 9f09e0b4-1b0a-4d17-87c2-844d6c9f030b
+Tickets were stapled and Gatekeeper assessments passed. Both final app ZIPs were independently extracted and passed signature and Gatekeeper checks.
+Packaging emitted the previously observed "write: Permission denied" warnings despite success. Signature, notarization and Gatekeeper verification passed; the warning cause remains unconfirmed.

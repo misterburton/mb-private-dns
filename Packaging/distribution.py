@@ -5,6 +5,7 @@ build = Path(sys.argv[1])
 (build / 'Distribution.xml').write_text('''<?xml version="1.0" encoding="utf-8"?>
 <installer-gui-script minSpecVersion="2">
   <title>Private DNS</title>
+  <readme file="ReadMe.html"/>
   <options customize="never" require-scripts="true" hostArchitectures="arm64"/>
   <domains enable_anywhere="false" enable_currentUserHome="false" enable_localSystem="true"/>
   <allowed-os-versions><os-version min="13.0"/></allowed-os-versions>

@@ -109,6 +109,18 @@ struct DNSService {
     let reference: SCNetworkService
     let existed: Bool
     let config: [String: Any]
+    let locations: [String]
+    let device: String
+    let current: Bool
+    let enabled: Bool
+    var diagnostic: String {
+        "\(name) [\(id)] • \(device) • \(enabled ? "enabled" : "disabled")\(current ? ", current location" : ", outside current location")\nLocations: \(locations.isEmpty ? "No network location (orphaned service)" : locations.joined(separator: "; "))\nDNS: \(servers(config).joined(separator: ", "))"
+    }
+}
+func shouldPreserveDNS(_ config: [String: Any], saved: [String: Any]?) -> Bool {
+    // Never replace an explicit resolver unless this saved service still points
+    // at our own resolver. A restored manual baseline is an exclusion too.
+    return !servers(config).isEmpty && (saved == nil || !isOurs(config))
 }
 final class Network {
     let prefs: SCPreferences
@@ -122,6 +134,15 @@ final class Network {
             guard let set = SCNetworkSetCopyCurrent(prefs) else { return [] }
             values = SCNetworkSetCopyServices(set) as? [SCNetworkService] ?? []
         } else { values = SCNetworkServiceCopyAll(prefs) as? [SCNetworkService] ?? [] }
+        let sets = SCNetworkSetCopyAll(prefs) as? [SCNetworkSet] ?? []
+        let currentIDs = Set((SCNetworkSetCopyCurrent(prefs).flatMap { SCNetworkSetCopyServices($0) as? [SCNetworkService] } ?? []).compactMap { SCNetworkServiceGetServiceID($0) as String? })
+        var locations: [String: [String]] = [:]
+        for set in sets {
+            let label = "\(SCNetworkSetGetName(set) as String? ?? "Unnamed") [\(SCNetworkSetGetSetID(set) as String? ?? "unknown")]"
+            for service in SCNetworkSetCopyServices(set) as? [SCNetworkService] ?? [] {
+                if let id = SCNetworkServiceGetServiceID(service) as String? { locations[id, default: []].append(label) }
+            }
+        }
         return values.compactMap { service in
             guard let interface = SCNetworkServiceGetInterface(service),
                   let type = SCNetworkInterfaceGetInterfaceType(interface) as String?,
@@ -131,7 +152,7 @@ final class Network {
                   let serviceID = SCNetworkServiceGetServiceID(service) as String? else { return nil }
             let proto = SCNetworkServiceCopyProtocol(service, kSCNetworkProtocolTypeDNS)
             let config = proto.flatMap { SCNetworkProtocolGetConfiguration($0) as? [String: Any] } ?? [:]
-            return DNSService(id: serviceID, name: name, reference: service, existed: proto != nil, config: config)
+            return DNSService(id: serviceID, name: name, reference: service, existed: proto != nil, config: config, locations: (locations[serviceID] ?? []).sorted(), device: SCNetworkInterfaceGetBSDName(interface) as String? ?? type, current: currentIDs.contains(serviceID), enabled: SCNetworkServiceGetEnabled(service))
         }
     }
     func set(_ service: DNSService, _ config: [String: Any], existed: Bool = true) throws {
@@ -182,19 +203,23 @@ final class DNSState {
     func apply(enabled: Bool) throws -> [String] {
         let network = try Network()
         let list = network.list(currentOnly: enabled)
+        return try apply(enabled: enabled, services: list, write: { try network.set($0, $1, existed: $2) }, commit: {
+            try network.commit()
+            _ = run("/usr/bin/dscacheutil", ["-flushcache"])
+            _ = run("/usr/bin/killall", ["-HUP", "mDNSResponder"])
+        })
+    }
+    func apply(enabled: Bool, services list: [DNSService], write: (DNSService, [String: Any], Bool) throws -> Void, commit: () throws -> Void) throws -> [String] {
         var backups = baseline
         var conflicts: [String] = []
         var changes: [(DNSService, [String: Any], Bool)] = []
         for service in list {
             let saved = backups[service.id]
             if enabled {
-                if let saved {
-                    let original = saved["config"] as? [String: Any] ?? [:]
-                    if !isOurs(service.config) && servers(service.config) != servers(original) {
-                        conflicts.append(service.name); continue
-                    }
-                } else {
-                    guard servers(service.config).isEmpty else { conflicts.append(service.name); continue }
+                if shouldPreserveDNS(service.config, saved: saved) {
+                    conflicts.append(service.diagnostic); continue
+                }
+                if saved == nil {
                     backups[service.id] = ["name": service.name, "config": service.config, "existed": service.existed]
                 }
                 if !isOurs(service.config) {
@@ -214,10 +239,8 @@ final class DNSState {
         // Persist recovery information before the first network mutation.
         if !NSDictionary(dictionary: backups).isEqual(to: baseline) { baseline = backups; try save() }
         if !changes.isEmpty {
-            for (service, config, existed) in changes { try network.set(service, config, existed: existed) }
-            try network.commit()
-            _ = run("/usr/bin/dscacheutil", ["-flushcache"])
-            _ = run("/usr/bin/killall", ["-HUP", "mDNSResponder"])
+            for (service, config, existed) in changes { try write(service, config, existed) }
+            try commit()
         }
         return conflicts
     }
