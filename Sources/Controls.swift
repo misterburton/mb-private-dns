@@ -13,6 +13,10 @@ final class Controls: NSObject, NSApplicationDelegate {
     var quitControls: NSMenuItem!
     var updateItem: NSMenuItem!
     var updating = false
+    var availableUpdateVersion: String?
+    var updateSchedule = UpdateSchedule()
+    var lookupUpdate: @MainActor (String) async throws -> UpdateCandidate? = { try await Updates.check(current: $0) }
+    var currentUpdateVersion: String { Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "unknown" }
     var attemptedStart = false
     var timer: Timer?
     var window: NSWindow?
@@ -26,7 +30,11 @@ final class Controls: NSObject, NSApplicationDelegate {
         configureMenu()
         // No window appears at installation, login, or app launch.
         refresh()
-        timer = Timer.scheduledTimer(withTimeInterval: 10, repeats: true) { [weak self] _ in self?.refresh() }
+        checkForScheduledUpdates()
+        timer = Timer.scheduledTimer(withTimeInterval: 10, repeats: true) { [weak self] _ in
+            self?.refresh()
+            self?.checkForScheduledUpdates()
+        }
     }
     func configureMenu() {
         NSApp.setActivationPolicy(.accessory)
@@ -165,21 +173,32 @@ final class Controls: NSObject, NSApplicationDelegate {
             DispatchQueue.main.async { self.changing = false; self.show(value) }
         }
     }
-    @objc func checkForUpdates() {
+    func checkForScheduledUpdates(now: Date = Date()) {
+        guard updateSchedule.isDue(now: now) else { return }
+        performUpdateCheck(background: true, now: now)
+    }
+    func restoreUpdateMenu() {
+        updateItem.isEnabled = true
+        updateItem.title = availableUpdateVersion.map { "Update Available (\($0))…" } ?? "Check for Updates…"
+    }
+    @objc func checkForUpdates() { performUpdateCheck(background: false) }
+    func performUpdateCheck(background: Bool, now: Date = Date()) {
         guard !updating else { return }
+        updateSchedule.recordAttempt(now: now)
         updating = true; updateItem.isEnabled = false; updateItem.title = "Checking for Updates…"
         Task { @MainActor in
-            defer { updating = false; updateItem.isEnabled = true; updateItem.title = "Check for Updates…" }
+            defer { updating = false; restoreUpdateMenu() }
             @MainActor func alert(_ title: String, _ message: String) -> NSAlert {
                 let alert = NSAlert(); alert.messageText = title; alert.informativeText = message
                 NSApp.activate(ignoringOtherApps: true)
                 return alert
             }
             do {
-                guard let current = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String else {
-                    throw error("The installed app version could not be read.")
-                }
-                guard let candidate = try await Updates.check(current: current) else {
+                let current = currentUpdateVersion
+                let candidate = try await lookupUpdate(current)
+                availableUpdateVersion = candidate?.version
+                if background { return }
+                guard let candidate else {
                     alert("You're up to date", "Private DNS \(current) is the latest available version.").runModal(); return
                 }
                 let offer = alert("Private DNS \(candidate.version) is available", "You have version \(current). Download and verify the update, then open the macOS installer? Your DNS settings will be preserved. The installer requests administrator authorization and briefly restarts Private DNS.")
@@ -194,7 +213,7 @@ final class Controls: NSObject, NSApplicationDelegate {
                 }
                 guard NSWorkspace.shared.open(package) else { throw error("macOS could not open the verified installer. Try again.") }
             } catch {
-                alert("Could not update Private DNS", error.localizedDescription).runModal()
+                if !background { alert("Could not update Private DNS", error.localizedDescription).runModal() }
             }
         }
     }

@@ -34,6 +34,34 @@ import Cocoa
         precondition(controls.window == nil)
         app.finishLaunching()
         RunLoop.current.run(until: Date().addingTimeInterval(0.2))
+        let now = Date()
+        var calls = 0
+        let candidate = UpdateCandidate(version: "99.0", asset: .init(name: "unused", browser_download_url: "unused", size: 1, digest: nil))
+        controls.lookupUpdate = { _ in calls += 1; return candidate }
+        func finishCheck() {
+            let deadline = Date().addingTimeInterval(3)
+            while controls.updating && Date() < deadline { RunLoop.current.run(until: Date().addingTimeInterval(0.01)) }
+            precondition(!controls.updating)
+        }
+        controls.checkForScheduledUpdates(now: now)
+        controls.checkForScheduledUpdates(now: now)
+        finishCheck()
+        precondition(calls == 1)
+        precondition(controls.updateItem.title == "Update Available (99.0)…")
+        precondition(controls.window == nil && controls.updateItem.isEnabled)
+        controls.checkForScheduledUpdates(now: now.addingTimeInterval(86399))
+        precondition(calls == 1 && !controls.updating)
+        controls.lookupUpdate = { _ in calls += 1; throw error("offline") }
+        controls.checkForScheduledUpdates(now: now.addingTimeInterval(86400))
+        finishCheck()
+        precondition(calls == 2 && controls.updateItem.title.contains("99.0"))
+        controls.checkForScheduledUpdates(now: now.addingTimeInterval(86410))
+        precondition(!controls.updating)
+        controls.lookupUpdate = { _ in calls += 1; return nil }
+        controls.checkForScheduledUpdates(now: now.addingTimeInterval(86400 * 4))
+        finishCheck()
+        precondition(calls == 3 && controls.updateItem.title == "Check for Updates…")
+        print("PASS: launch check, duplicate prevention, daily deadline, quiet offline failure, retained update notice, sleep catch-up and cleared notice")
         NSStatusBar.system.removeStatusItem(controls.status)
         print("PASS: AppKit app loads; managed, failed, split, unknown, paused and recovered menu states render without opening windows or changing DNS")
     }

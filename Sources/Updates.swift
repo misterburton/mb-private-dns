@@ -122,3 +122,11 @@ enum Updates {
         guard assessment.code == 0 else { throw error("macOS could not approve this installer. Check your connection and try again. Nothing was installed.") }
     }
 }
+
+// A fresh controls process checks at launch. Missed checks after sleep coalesce
+// into one attempt; failures also wait a day instead of retrying every tick.
+struct UpdateSchedule {
+    private(set) var nextCheck = Date.distantPast
+    func isDue(now: Date) -> Bool { now >= nextCheck }
+    mutating func recordAttempt(now: Date) { nextCheck = now.addingTimeInterval(24 * 60 * 60) }
+}

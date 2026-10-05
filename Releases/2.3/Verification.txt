@@ -1,0 +1,22 @@
+Private DNS 2.3 verification
+Apple Silicon, macOS 27.0.1. October 4, 2026.
+
+The menu controls check GitHub's public release API at launch and every 24 hours after the last attempt (including a manual check). An overdue check after sleep runs once. Checks stop when controls are closed. A newer validated release changes the menu item to Update Available (version). Background checks never show dialogs, download packages, open Installer, or change DNS. Failures wait until the next scheduled attempt and retain any previously found update notice; manual checks remain available.
+
+Passed: existing policy/persistence, DNS routing, AppKit menu, and updater validation suites. Added behavioral tests exercise launch checking, duplicate prevention, the daily deadline, quiet offline errors, retained update notices, sleep catch-up, and notice clearing. The actual controls code runs these tests with injected responses and a simulated clock, without waiting 24 hours or changing DNS.
+
+A live anonymous download of release 2.2 passed checksum, expected developer signature, and Gatekeeper verification before this build. Its current-version check correctly reported no update. No installer or uninstaller was run during verification.
+
+Limitations: an actual 24-hour wait, actual sleep/wake, and a full interactive 2.2-to-2.3 installation were not performed. Live Tailscale/exit-node use, airplane Wi-Fi, and reboot behavior remain unverified. The user reported that the transient resolver warning after installing 2.2 cleared after roughly 20 to 30 seconds; startup health behavior is unchanged in 2.3.
+
+Research:
+https://developer.apple.com/documentation/foundation/timer
+https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api
+
+Apple notarization accepted:
+Installer: bf2b0612-1218-4fc4-b0b7-beef5e49515b
+Controls: 2a73f3aa-9048-46e7-b6a1-5c590241cbc1
+Uninstaller: 9f0adb67-ab59-4c8c-beba-d7a86855686c
+Tickets were stapled and Gatekeeper checks passed. Both final app ZIPs were extracted and independently passed signature and Gatekeeper checks. The signed 2.3 app launched successfully with startup checking enabled, remained running, and produced no diagnostics. It was closed after testing; the installed version was not changed.
+
+Packaging emitted the same four "write: Permission denied" warnings seen in 2.2, despite returning success. Signature, notarization, and Gatekeeper checks passed. The warning cause remains unconfirmed.
