@@ -1,0 +1,22 @@
+Private DNS 2.2 verification
+Apple Silicon, macOS 27.0.1. October 4, 2026.
+
+Update checks use GitHub's public releases API without credentials or cookies. Only a strictly newer stable numeric version with the exact Apple Silicon package name, repository URL, declared size, and SHA-256 digest is accepted. Downloads must match their declared size and hash, the expected Developer ID Installer identity, and macOS Gatekeeper approval before the user can open Installer. DNS commands are not part of the updater.
+
+Passed: 13 policy/persistence checks, 24 DNS routing cases, AppKit menu load and update-action wiring, and 19 update validation/error cases. A live anonymous check downloaded release 2.1 and passed checksum, expected developer signature, and Gatekeeper verification. A second check using that release's version correctly reported no update. No installation or DNS changes were performed by these tests.
+
+Limitations: a full interactive update installation remains for laptop testing. Version 2.1 has no update menu, so it requires one manual installation of 2.2. Live Tailscale/exit-node behavior, airplane Wi-Fi, and an actual reboot remain unverified. The existing Tailscale changes are status reporting improvements, not a change to VPN routing. No App Store compatibility is claimed.
+
+Research:
+https://docs.github.com/en/rest/releases/releases
+https://docs.github.com/en/rest/releases/assets
+https://developer.apple.com/documentation/security/resolving-common-notarization-issues
+https://developer.apple.com/library/archive/documentation/Security/Conceptual/CodeSigningGuide/Procedures/Procedures.html
+
+Apple notarization accepted:
+Installer: 91c72728-e222-4391-a31e-e92ed2e88fe3
+Controls app: de0c0a1c-ef1c-4eae-96b7-369e10479f59
+Uninstaller: 304d7ab3-dc4b-4017-b5ca-e6a77147f43e
+Tickets were stapled and the build's Gatekeeper assessments passed. The signed 2.2 app launched against the existing installed service, remained running, and produced no diagnostics. It was closed after the smoke test. No installer or uninstaller was run.
+
+Packaging emitted four "write: Permission denied" warnings during package construction despite returning success. The generated package passed signature, notarization, and Gatekeeper checks; the cause of those warnings remains unconfirmed. Installation is still to be tested on the laptop.

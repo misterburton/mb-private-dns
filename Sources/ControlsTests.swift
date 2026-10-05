@@ -7,6 +7,9 @@ import Cocoa
         let app = NSApplication.shared
         let controls = Controls()
         controls.configureMenu()
+        precondition(controls.updateItem.title == "Check for Updates…")
+        precondition(controls.updateItem.action == #selector(Controls.checkForUpdates))
+        precondition(controls.updateItem.isEnabled)
         func show(_ owner: String, _ mode: String, healthy: Bool = true, split: Bool = false) {
             controls.show(["ok": true, "enabled": true, "healthy": healthy,
                            "dnsOwner": owner, "mode": mode, "splitDNS": split])

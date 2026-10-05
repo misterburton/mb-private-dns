@@ -11,6 +11,8 @@ final class Controls: NSObject, NSApplicationDelegate {
     var pauseBoot: NSMenuItem!
     var quitApp: NSMenuItem!
     var quitControls: NSMenuItem!
+    var updateItem: NSMenuItem!
+    var updating = false
     var attemptedStart = false
     var timer: Timer?
     var window: NSWindow?
@@ -42,6 +44,7 @@ final class Controls: NSObject, NSApplicationDelegate {
         pauseBoot = add("Pause Until Restart", #selector(pauseUntilRestart))
         menu.addItem(.separator())
         _ = add("Details…", #selector(showDetails))
+        updateItem = add("Check for Updates…", #selector(checkForUpdates))
         quitControls = add("Quit Controls (protection continues)", #selector(quitControlsOnly))
         quitApp = add("Quit Private DNS", #selector(quit))
         quitApp.keyEquivalent = "q"
@@ -160,6 +163,39 @@ final class Controls: NSObject, NSApplicationDelegate {
             let value: [String: Any]
             do { value = try sendCommand(action) } catch { value = ["ok": false, "error": error.localizedDescription] }
             DispatchQueue.main.async { self.changing = false; self.show(value) }
+        }
+    }
+    @objc func checkForUpdates() {
+        guard !updating else { return }
+        updating = true; updateItem.isEnabled = false; updateItem.title = "Checking for Updates…"
+        Task { @MainActor in
+            defer { updating = false; updateItem.isEnabled = true; updateItem.title = "Check for Updates…" }
+            @MainActor func alert(_ title: String, _ message: String) -> NSAlert {
+                let alert = NSAlert(); alert.messageText = title; alert.informativeText = message
+                NSApp.activate(ignoringOtherApps: true)
+                return alert
+            }
+            do {
+                guard let current = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String else {
+                    throw error("The installed app version could not be read.")
+                }
+                guard let candidate = try await Updates.check(current: current) else {
+                    alert("You're up to date", "Private DNS \(current) is the latest available version.").runModal(); return
+                }
+                let offer = alert("Private DNS \(candidate.version) is available", "You have version \(current). Download and verify the update, then open the macOS installer? Your DNS settings will be preserved. The installer requests administrator authorization and briefly restarts Private DNS.")
+                offer.addButton(withTitle: "Download Update"); offer.addButton(withTitle: "Not Now")
+                guard offer.runModal() == .alertFirstButtonReturn else { return }
+                updateItem.title = "Downloading and Verifying…"
+                let package = try await Updates.download(candidate)
+                let ready = alert("Update verified", "Private DNS \(candidate.version) is ready. Continue in the macOS installer to install it.")
+                ready.addButton(withTitle: "Open Installer"); ready.addButton(withTitle: "Cancel")
+                guard ready.runModal() == .alertFirstButtonReturn else {
+                    try? FileManager.default.removeItem(at: package.deletingLastPathComponent()); return
+                }
+                guard NSWorkspace.shared.open(package) else { throw error("macOS could not open the verified installer. Try again.") }
+            } catch {
+                alert("Could not update Private DNS", error.localizedDescription).runModal()
+            }
         }
     }
     @objc func turnOn() {

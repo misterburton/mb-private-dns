@@ -14,7 +14,7 @@ uninstaller="$root/Applications/Uninstall Private DNS.app"
 runtime="$root/Library/Application Support/Private DNS/Runtime"
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources" "$uninstaller/Contents/MacOS" "$uninstaller/Contents/Resources" "$runtime"
 swiftc -O -file-prefix-map "$src=/PrivateDNS/Source" -target arm64-apple-macos13.0 "$src/Sources/Core.swift" "$src/Sources/Service.swift" -o "$build/PrivateDNSService" -framework SystemConfiguration
-swiftc -O -file-prefix-map "$src=/PrivateDNS/Source" -target arm64-apple-macos13.0 "$src/Sources/Core.swift" "$src/Sources/Controls.swift" -o "$app/Contents/MacOS/PrivateDNS" -framework Cocoa -framework SystemConfiguration
+swiftc -O -file-prefix-map "$src=/PrivateDNS/Source" -target arm64-apple-macos13.0 "$src/Sources/Core.swift" "$src/Sources/Controls.swift" "$src/Sources/Updates.swift" -o "$app/Contents/MacOS/PrivateDNS" -framework Cocoa -framework SystemConfiguration
 swiftc -O -file-prefix-map "$src=/PrivateDNS/Source" -target arm64-apple-macos13.0 "$src/Sources/Core.swift" "$src/Sources/Uninstaller.swift" -o "$uninstaller/Contents/MacOS/UninstallPrivateDNS" -framework Cocoa -framework SystemConfiguration
 cp "$build/PrivateDNSService" "$root/Library/PrivilegedHelperTools/local-private-dns-helper"
 cp "$build/PrivateDNSService" "$uninstaller/Contents/MacOS/PrivateDNSService"
