@@ -1,0 +1,16 @@
+Private DNS 2.4 verification
+Apple Silicon, macOS 27.0.1. October 4, 2026.
+
+Adds the user-approved Google Material globe-and-lock icon with increased padding. Finder uses a black-on-white app icon. Update dialogs and Details use adaptive light/dark foreground colors. Details gains an icon above the existing scrollable text. The Apache 2.0 license is included in the app resources. DNS routing and update behavior are unchanged.
+
+The existing policy, DNS routing, AppKit menu/schedule, and updater validation tests passed. During implementation, a native AppKit preview loaded the bundled icon and rendered Details and the update-dialog icon in light and dark appearances. Both Details previews were visually checked. No installer or uninstaller was run.
+
+Limitations: the complete upgrade is left for the user's in-app update test. Finder uses a static icon; in-app icons adapt to appearance. Existing live Tailscale/exit-node, airplane Wi-Fi, and actual reboot testing limitations remain.
+
+Apple notarization accepted:
+Installer: d841fd54-39f0-42a1-8481-07ef6861e8e4
+Controls: ba9572d1-9c93-4f94-b7e5-1fa4fd3c7bb3
+Uninstaller: 75e5dd4c-0044-4cad-9366-96de04675118
+Tickets were stapled and Gatekeeper checks passed. Both final app ZIPs were extracted and independently passed signature and Gatekeeper checks. The signed 2.4 app launched, remained running, and produced no diagnostics. Version metadata, bundled icon files and bundled license were verified. The app was closed after testing; the installed version was not changed.
+
+Packaging emitted the previously observed "write: Permission denied" warnings despite returning success. Signature, notarization, and Gatekeeper checks passed. Their cause remains unconfirmed.

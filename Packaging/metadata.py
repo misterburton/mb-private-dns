@@ -12,6 +12,8 @@ for folder, name, executable, ident in [
             'CFBundleIdentifier': ident, 'CFBundleVersion': version, 'CFBundleShortVersionString': version,
             'CFBundlePackageType': 'APPL', 'LSMinimumSystemVersion': '13.0', 'LSUIElement': True,
             'NSHighResolutionCapable': True, 'LSArchitecturePriority': ['arm64']}
+    if ident == 'local.private-dns.controls':
+        info['CFBundleIconFile'] = 'PrivateDNS.icns'
     (root / 'Applications' / folder / 'Contents/Info.plist').write_bytes(plistlib.dumps(info))
 daemon = {'Label': 'local.private-dns.resolver',
           'ProgramArguments': ['/Library/PrivilegedHelperTools/local-private-dns-helper', '--daemon'],

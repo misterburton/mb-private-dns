@@ -84,7 +84,7 @@ final class Service {
                 "healthy": healthy, "override": overrides, "conflicts": conflicts, "protectedServices": protected,
                 "dnsOwner": routing.owner, "splitDNS": routing.splitDNS, "scopedDNS": routing.scopedDNS,
                 "tailscaleDNS": routing.tailscalePresent,
-                "totalServices": list.count, "error": lastError, "provider": "Cloudflare", "version": "2.3"]
+                "totalServices": list.count, "error": lastError, "provider": "Cloudflare", "version": "2.4"]
     }
     func handle(_ command: String) -> [String: Any] {
         guard ["status", "on", "pause 900", "pause 3600", "pause reboot"].contains(command) else { return ["ok": false, "error": "Unsupported command."] }

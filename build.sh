@@ -3,7 +3,7 @@ set -euo pipefail
 src="$(cd "$(dirname "$0")" && pwd)"
 build="${BUILD_DIR:-$src/build}"
 release="${RELEASE_DIR:-$src/Releases/Builds}"
-version='2.3'
+version='2.4'
 mkdir -p "$build" "$release"
 root="$build/root"
 scripts="$build/scripts"
@@ -14,7 +14,7 @@ uninstaller="$root/Applications/Uninstall Private DNS.app"
 runtime="$root/Library/Application Support/Private DNS/Runtime"
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources" "$uninstaller/Contents/MacOS" "$uninstaller/Contents/Resources" "$runtime"
 swiftc -O -file-prefix-map "$src=/PrivateDNS/Source" -target arm64-apple-macos13.0 "$src/Sources/Core.swift" "$src/Sources/Service.swift" -o "$build/PrivateDNSService" -framework SystemConfiguration
-swiftc -O -file-prefix-map "$src=/PrivateDNS/Source" -target arm64-apple-macos13.0 "$src/Sources/Core.swift" "$src/Sources/Controls.swift" "$src/Sources/Updates.swift" -o "$app/Contents/MacOS/PrivateDNS" -framework Cocoa -framework SystemConfiguration
+swiftc -O -file-prefix-map "$src=/PrivateDNS/Source" -target arm64-apple-macos13.0 "$src/Sources/Core.swift" "$src/Sources/AppIcon.swift" "$src/Sources/Controls.swift" "$src/Sources/Updates.swift" -o "$app/Contents/MacOS/PrivateDNS" -framework Cocoa -framework SystemConfiguration
 swiftc -O -file-prefix-map "$src=/PrivateDNS/Source" -target arm64-apple-macos13.0 "$src/Sources/Core.swift" "$src/Sources/Uninstaller.swift" -o "$uninstaller/Contents/MacOS/UninstallPrivateDNS" -framework Cocoa -framework SystemConfiguration
 cp "$build/PrivateDNSService" "$root/Library/PrivilegedHelperTools/local-private-dns-helper"
 cp "$build/PrivateDNSService" "$uninstaller/Contents/MacOS/PrivateDNSService"
@@ -22,6 +22,8 @@ cp "$build/PrivateDNSService" "$scripts/PrivateDNSService"
 cp "$src/Resources/dnscrypt-proxy" "$runtime/dnscrypt-proxy"
 cp "$src/Resources/dnscrypt-proxy.toml" "$runtime/dnscrypt-proxy.toml"
 cp "$src/Resources/dnscrypt-proxy-LICENSE.txt" "$src/Resources/dnscrypt-proxy-README.txt" "$app/Contents/Resources/"
+cp "$src/Resources/Icon/PrivateDNS.icns" "$src/Resources/Icon/Template.png" "$app/Contents/Resources/"
+cp "$src/Resources/Icon/LICENSE.txt" "$app/Contents/Resources/Material-Icons-LICENSE.txt"
 cp "$src/Resources/controls-service.sh" "$app/Contents/Resources/controls-service.sh"
 cp "$src/Packaging/uninstall.sh" "$uninstaller/Contents/Resources/uninstall.sh"
 cp "$src/Packaging/preinstall" "$src/Packaging/postinstall" "$scripts/"

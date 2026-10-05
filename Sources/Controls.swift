@@ -190,6 +190,7 @@ final class Controls: NSObject, NSApplicationDelegate {
             defer { updating = false; restoreUpdateMenu() }
             @MainActor func alert(_ title: String, _ message: String) -> NSAlert {
                 let alert = NSAlert(); alert.messageText = title; alert.informativeText = message
+                alert.icon = AppIcon.adaptive()
                 NSApp.activate(ignoringOtherApps: true)
                 return alert
             }
@@ -226,8 +227,14 @@ final class Controls: NSObject, NSApplicationDelegate {
     @objc func pauseUntilRestart() { command("pause reboot") }
     @objc func showDetails() {
         if window == nil {
-            let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 540, height: 340), styleMask: [.titled, .closable], backing: .buffered, defer: false)
+            let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 540, height: 412), styleMask: [.titled, .closable], backing: .buffered, defer: false)
             w.title = "Private DNS"; w.isReleasedWhenClosed = false; w.center()
+            let icon = NSImageView(frame: NSRect(x: 17, y: 332, width: 72, height: 72))
+            icon.image = AppIcon.template()
+            icon.contentTintColor = .labelColor
+            icon.imageScaling = .scaleProportionallyUpOrDown
+            icon.setAccessibilityLabel("Private DNS globe and lock")
+            w.contentView?.addSubview(icon)
             let scroller = NSScrollView(frame: NSRect(x: 25, y: 20, width: 490, height: 295))
             scroller.hasVerticalScroller = true; scroller.autohidesScrollers = true
             scroller.drawsBackground = false
