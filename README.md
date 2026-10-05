@@ -37,8 +37,18 @@ Cloudflare resolves the queries and can see them. Networks may still identify de
 
 See [verification notes](Releases/2.1/Verification.txt) for tested behavior and remaining limitations, including untested airplane Wi-Fi and actual reboot behavior.
 
+## Tailscale compatibility (2.2 source, not yet released)
+
+MagicDNS is Tailscale's device naming feature: it lets you connect to a device by name instead of its IP address. Private DNS preserves those routes and your VPN settings.
+
+The updated controls distinguish a separate route for private names from Tailscale managing default DNS. In the latter case, they show **DNS managed by Tailscale**, with upstream encryption marked unverified. Actual resolver failures still require attention. This prevents an expected VPN configuration from looking like a broken app without claiming protection we cannot verify.
+
+Automated routing and menu checks pass. Live Tailscale connection and exit-node coverage still need verification before a release. The download above remains version 2.1. See [research and test results](Releases/Tailscale-Compatibility-Verification.md).
+
 ## Files and development
 
 Local downloads: **Documents → GitHub → mb-private-dns → Releases → 2.1**. GitHub downloads require access to this private repository; you can share the downloaded installer directly.
 
 Source lives in `Sources/`, installer scripts in `Packaging/`, and the bundled dnscrypt-proxy engine and ISC license in `Resources/`. Run `build.sh` to build; new artifacts go to `Releases/Builds`. See [build and signing instructions](README.txt). Private keys and notarization credentials stay in Keychain.
+
+Run `bash test.sh` for policy, resolver routing, and AppKit menu tests. Add `--live` to read and classify the current macOS DNS snapshot without changing it.

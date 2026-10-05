@@ -30,6 +30,79 @@ func bootID() -> String { run("/usr/sbin/sysctl", ["-n", "kern.bootsessionuuid"]
 func servers(_ config: [String: Any]) -> [String] { config["ServerAddresses"] as? [String] ?? [] }
 func isOurs(_ config: [String: Any]) -> Bool { servers(config) == ["127.0.0.1"] }
 
+// Read the complete resolver snapshot. Domain-specific and interface-scoped
+// resolvers are not interchangeable with the default resolver (resolver(5)).
+struct ResolverEntry {
+    var domain = ""
+    var addresses: [String] = []
+    var scoped = false
+    var supplemental = false
+    var multicast = false
+    var unavailable = false
+    var port = 53
+    var isDefault: Bool { !scoped && !multicast && (domain == "." || (!supplemental && domain.isEmpty)) }
+    var isPrivateDNS: Bool { addresses == ["127.0.0.1"] && port == 53 }
+    var isTailscale: Bool {
+        !addresses.isEmpty && port == 53 && addresses.allSatisfy {
+            ["100.100.100.100", "fd7a:115c:a1e0::53"].contains($0.lowercased())
+        }
+    }
+}
+
+struct DNSRouting {
+    let owner: String // private-dns, tailscale, other, mixed, unknown
+    let splitDNS: Bool
+    let scopedDNS: Bool
+    let tailscalePresent: Bool
+
+    init(output: String, succeeded: Bool) {
+        var entries: [ResolverEntry] = []
+        var entry: ResolverEntry?
+        var scopedSection = false
+        for raw in output.components(separatedBy: .newlines) {
+            let line = raw.trimmingCharacters(in: .whitespaces)
+            if line.hasPrefix("DNS configuration") {
+                if let current = entry { entries.append(current); entry = nil }
+                scopedSection = line != "DNS configuration"
+            } else if line.hasPrefix("resolver #") {
+                if let current = entry { entries.append(current) }
+                entry = ResolverEntry(scoped: scopedSection)
+            } else if let colon = line.firstIndex(of: ":"), entry != nil {
+                let key = line[..<colon].trimmingCharacters(in: .whitespaces)
+                let value = line[line.index(after: colon)...].trimmingCharacters(in: .whitespaces)
+                if key == "domain" { entry?.domain = value }
+                else if key.hasPrefix("nameserver[") { entry?.addresses.append(value) }
+                else if key == "flags" {
+                    entry?.scoped = scopedSection || value.contains("Scoped") || value.contains("Service-specific")
+                    entry?.supplemental = value.contains("Supplemental")
+                } else if key == "options" { entry?.multicast = value.split(separator: " ").contains("mdns") }
+                else if key == "reach" { entry?.unavailable = value.contains("Not Reachable") }
+                else if key == "port" { entry?.port = Int(value) ?? -1 }
+            }
+        }
+        if let current = entry { entries.append(current) }
+        let defaults = entries.filter(\.isDefault)
+        splitDNS = entries.contains { !$0.scoped && !$0.isDefault && !$0.multicast && !$0.addresses.isEmpty && !$0.isPrivateDNS }
+        scopedDNS = entries.contains { $0.scoped && !$0.multicast && !$0.unavailable && !$0.addresses.isEmpty && !$0.isPrivateDNS }
+        tailscalePresent = entries.contains(where: \.isTailscale)
+        if !succeeded || defaults.isEmpty || defaults.contains(where: { $0.addresses.isEmpty || $0.unavailable }) {
+            owner = "unknown"
+        } else if defaults.allSatisfy(\.isPrivateDNS) { owner = "private-dns" }
+        else if defaults.allSatisfy(\.isTailscale) { owner = "tailscale" }
+        else if defaults.contains(where: { $0.addresses.contains("127.0.0.1") || $0.isTailscale }) { owner = "mixed" }
+        else { owner = "other" }
+    }
+
+    func mode(enabled: Bool, healthy: Bool, conflicts: [String], error: String) -> String {
+        if !error.isEmpty { return "attention" }
+        if !enabled { return "paused" }
+        if !healthy || !conflicts.isEmpty { return "attention" }
+        if owner == "tailscale" { return "managed" }
+        if owner == "private-dns" && !scopedDNS { return "on" }
+        return "attention"
+    }
+}
+
 struct DNSService {
     let id: String
     let name: String

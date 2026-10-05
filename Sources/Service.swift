@@ -76,12 +76,15 @@ final class Service {
         let network = try? Network()
         let list = network?.list(currentOnly: true) ?? []
         let protected = list.filter { isOurs($0.config) }.map(\.name)
-        let dns = run("/usr/sbin/scutil", ["--dns"]).text.components(separatedBy: "\n").first { $0.contains("nameserver[0]") } ?? ""
-        let overrides = state.policy.enabled && !dns.isEmpty && !dns.contains("127.0.0.1")
-        let mode = !lastError.isEmpty || (state.policy.enabled && (!healthy || !conflicts.isEmpty || overrides)) ? "attention" : state.policy.enabled ? "on" : "paused"
+        let dns = run("/usr/sbin/scutil", ["--dns"])
+        let routing = DNSRouting(output: dns.text, succeeded: dns.code == 0)
+        let overrides = state.policy.enabled && ["tailscale", "other", "mixed"].contains(routing.owner)
+        let mode = routing.mode(enabled: state.policy.enabled, healthy: healthy, conflicts: conflicts, error: lastError)
         return ["ok": lastError.isEmpty, "mode": mode, "enabled": state.policy.enabled, "pauseUntil": state.policy.until,
                 "healthy": healthy, "override": overrides, "conflicts": conflicts, "protectedServices": protected,
-                "totalServices": list.count, "error": lastError, "provider": "Cloudflare", "version": "2.1"]
+                "dnsOwner": routing.owner, "splitDNS": routing.splitDNS, "scopedDNS": routing.scopedDNS,
+                "tailscaleDNS": routing.tailscalePresent,
+                "totalServices": list.count, "error": lastError, "provider": "Cloudflare", "version": "2.2"]
     }
     func handle(_ command: String) -> [String: Any] {
         guard ["status", "on", "pause 900", "pause 3600", "pause reboot"].contains(command) else { return ["ok": false, "error": "Unsupported command."] }

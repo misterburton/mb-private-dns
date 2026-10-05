@@ -21,6 +21,12 @@ final class Controls: NSObject, NSApplicationDelegate {
     var refreshing = false
     var summary = "Checking DoH…"
     func applicationDidFinishLaunching(_ notification: Notification) {
+        configureMenu()
+        // No window appears at installation, login, or app launch.
+        refresh()
+        timer = Timer.scheduledTimer(withTimeInterval: 10, repeats: true) { [weak self] _ in self?.refresh() }
+    }
+    func configureMenu() {
         NSApp.setActivationPolicy(.accessory)
         signal(SIGPIPE, SIG_IGN)
         status = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -40,9 +46,6 @@ final class Controls: NSObject, NSApplicationDelegate {
         quitApp = add("Quit Private DNS", #selector(quit))
         quitApp.keyEquivalent = "q"
         status.menu = menu
-        // No window appears at installation, login, or app launch.
-        refresh()
-        timer = Timer.scheduledTimer(withTimeInterval: 10, repeats: true) { [weak self] _ in self?.refresh() }
     }
     func add(_ title: String, _ action: Selector) -> NSMenuItem {
         let item = NSMenuItem(title: title, action: action, keyEquivalent: ""); item.target = self
@@ -54,6 +57,7 @@ final class Controls: NSObject, NSApplicationDelegate {
         let healthy = value["healthy"] as? Bool ?? false
         let until = value["pauseUntil"] as? Double ?? 0
         let errorText = value["error"] as? String ?? ""
+        let owner = value["dnsOwner"] as? String
         var message: String
         if value["ok"] as? Bool != true {
             headline.title = "DoH needs attention"; status.button?.title = "DoH !"
@@ -66,24 +70,59 @@ final class Controls: NSObject, NSApplicationDelegate {
                 let time = DateFormatter.localizedString(from: date, dateStyle: .none, timeStyle: .short)
                 detail.title = "Resumes automatically at \(time)"
             } else { detail.title = "Resumes when you restart your Mac" }
-            message = "Network-provided DNS is active.\n\n\(detail.title). You can resume protection sooner from the DoH menu."
+            message = "Private DNS is paused. Your network or VPN controls DNS.\n\n\(detail.title). You can resume protection sooner from the DoH menu."
         } else {
             headline.title = mode == "on" ? "DoH is on" : "DoH needs attention"
             status.button?.title = mode == "on" ? "DoH On" : "DoH !"
             detail.title = healthy ? "Cloudflare • DNS over HTTPS" : "Encrypted resolver is not responding"
             message = healthy ? "Cloudflare DNS over HTTPS is configured and the local resolver is responding." : "DNS over HTTPS is configured, but the encrypted resolver isn't responding. Pause protection if you need to sign in to Wi-Fi."
-            if value["override"] as? Bool == true { message += "\n\nA VPN or another DNS resolver currently takes priority. Private DNS does not disconnect or change your VPN." }
+            if let owner {
+                switch owner {
+                case "tailscale":
+                    if mode == "managed" {
+                        headline.title = "DNS managed by Tailscale"
+                        status.button?.title = "DNS Tailscale"
+                    }
+                    detail.title = "Tailscale upstream encryption is unverified"
+                    message = "macOS lists Tailscale as its default DNS resolver. Private DNS remains enabled, but cannot verify which provider or encryption Tailscale uses upstream. This is not a claim that your public DNS is protected by Private DNS.\n\nTailscale can handle public lookups itself or through an exit node (another device that routes your internet traffic). Its presence alone does not prove those lookups use HTTPS. Private DNS leaves these settings unchanged."
+                    if !healthy { message += "\n\nThe Private DNS resolver is also not responding. Its protection cannot resume reliably until it recovers." }
+                case "private-dns":
+                    if healthy {
+                        message = "The default DNS resolver is Private DNS, and its Cloudflare HTTPS resolver is responding."
+                    }
+                    if value["splitDNS"] as? Bool == true {
+                        detail.title = "Default DNS: Cloudflare • Other domains: separate DNS"
+                        message += "\n\nSome domains use separate DNS settings. These routes are preserved and are outside Private DNS's verified protection."
+                        if value["tailscaleDNS"] as? Bool == true {
+                            message += " Tailscale's MagicDNS lets you reach your devices by name instead of IP address."
+                        }
+                    }
+                    if value["scopedDNS"] as? Bool == true {
+                        detail.title = "Some network interfaces use other DNS"
+                        message += "\n\nOther DNS servers are available to interface-specific queries. Private DNS cannot verify their encryption."
+                    }
+                case "unknown":
+                    detail.title = "System DNS routing could not be verified"
+                    message = "Private DNS cannot determine the default DNS route from macOS. A responding local resolver alone does not establish that your apps are using it."
+                default:
+                    detail.title = "Other DNS settings take priority"
+                    message = "macOS lists other or mixed default DNS servers. Private DNS cannot verify the provider or encryption for those routes. VPN and third-party DNS settings have been preserved."
+                }
+            } else if value["override"] as? Bool == true {
+                // Preserve accurate behavior when newer controls talk to an older service.
+                message += "\n\nA VPN or another DNS resolver currently takes priority. Private DNS does not disconnect or change your VPN."
+            }
             let conflicts = value["conflicts"] as? [String] ?? []
             if !conflicts.isEmpty { message += "\n\nOther DNS settings were preserved for: " + conflicts.joined(separator: ", ") + ". Resolve those settings before enabling protection there." }
         }
-        message += "\n\nProtection resumes at every restart. Timed pauses also expire while the controls are closed; after sleep, protection resumes when the service runs again."
+        message += "\n\nPrivate DNS re-enables at every restart. Timed pauses also expire while the controls are closed; after sleep, they expire when the service runs again. VPN DNS may still take priority."
         status.button?.toolTip = message
         summary = message + "\n\n" + """
         What is DoH?
         DoH means DNS over HTTPS. DNS looks up the internet address for a name such as example.com so your Mac can connect. DNS still works when DoH is off.
 
         When DoH is on
-        Private DNS encrypts your Mac's system DNS lookups on their way to Cloudflare. Your ISP, employer, school, or Wi-Fi operator cannot read or alter those lookups in transit on the network.
+        Lookups routed through Private DNS are encrypted on their way to Cloudflare. Your ISP, employer, school, or Wi-Fi operator cannot read or alter those lookups in transit on the network. Domain-specific, interface-specific, and VPN DNS can take a different route.
 
         When DoH is off or paused
         Your Mac uses network-provided DNS. Unless another app or VPN encrypts it, these lookups can reveal the domain names of websites and services you use to your ISP and the operator of your work, school, or Wi-Fi network, even when websites use HTTPS.
@@ -93,7 +132,7 @@ final class Controls: NSObject, NSApplicationDelegate {
         """
         updateDetails()
         quitApp.isEnabled = !changing; quitControls.isEnabled = !changing
-        resume.isEnabled = !changing && (!enabled || mode == "attention")
+        resume.isEnabled = !changing && (!enabled || (mode == "attention" && owner != "tailscale"))
         [pause15!, pause60!, pauseBoot!].forEach { $0.isEnabled = !changing && value["ok"] as? Bool == true }
     }
     func refresh() {
@@ -198,6 +237,7 @@ final class Controls: NSObject, NSApplicationDelegate {
     }
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool { refresh(); return false }
 }
+#if !CONTROLS_TESTING
 @main struct ControlsMain {
     static func main() {
         let controller = Controls()
@@ -205,3 +245,4 @@ final class Controls: NSObject, NSApplicationDelegate {
         withExtendedLifetime(controller) { NSApplication.shared.run() }
     }
 }
+#endif

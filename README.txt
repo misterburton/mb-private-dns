@@ -1,5 +1,9 @@
 Private DNS 2.1 ;  Apple Silicon Macs
 
+SOURCE UPDATE: 2.2 development candidate. Released downloads remain 2.1.
+The 2.2 controls recognize Tailscale-managed default DNS and preserve separate DNS routes for private device names (MagicDNS). Tailscale upstream encryption is explicitly unverified. Real resolver failures still require attention.
+See Releases/Tailscale-Compatibility-Verification.md for research, tests, and release limitations.
+
 Keep your Mac's DNS lookups private from the network you're using. Private DNS encrypts system domain lookups so your ISP or Wi-Fi operator cannot simply read or alter those requests in transit.
 Unencrypted DNS can expose the domains you connect to to your home ISP, mobile carrier when tethering, or office network administrator, even when sites use HTTPS or your browser is in private mode. Install once to protect these lookups automatically, with a quick pause for Wi-Fi sign-in.
 
@@ -41,6 +45,7 @@ THIRD-PARTY SOFTWARE
 Includes dnscrypt-proxy 2.1.18 for Apple Silicon. Its ISC license and upstream README are included in Private DNS.app/Contents/Resources.
 
 BUILD AND SIGN
+Run bash test.sh for policy, routing, and AppKit menu tests. Optional --live reads current DNS routing without changing settings.
 Run build.sh with Xcode command line tools and Python 3 available.
 Set SIGNING_IDENTITY to your Developer ID Application identity.
 Set INSTALLER_IDENTITY to your Developer ID Installer identity.
