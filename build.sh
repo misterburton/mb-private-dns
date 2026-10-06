@@ -3,7 +3,7 @@ set -euo pipefail
 src="$(cd "$(dirname "$0")" && pwd)"
 build="${BUILD_DIR:-$src/build}"
 release="${RELEASE_DIR:-$src/Releases/Builds}"
-version='2.9'
+version='2.10'
 mkdir -p "$build" "$release"
 root="$build/root"
 scripts="$build/scripts"
@@ -33,6 +33,15 @@ cp "$src/Packaging/preinstall" "$src/Packaging/postinstall" "$scripts/"
 chmod 755 "$scripts/preinstall" "$scripts/postinstall" "$scripts/PrivateDNSService"
 chmod 755 "$app/Contents/MacOS/PrivateDNS" "$uninstaller/Contents/MacOS/UninstallPrivateDNS" "$uninstaller/Contents/MacOS/PrivateDNSService" "$runtime/dnscrypt-proxy"
 python3 "$src/Packaging/metadata.py" "$root" "$version"
+xcrun actool "$src/Resources/Icon/AppIcon.xcassets" --compile "$app/Contents/Resources" --platform macosx --minimum-deployment-target 13.0 --app-icon AppIcon --output-partial-info-plist "$build/icon-info.plist" --output-format human-readable-text
+python3 - "$app/Contents/Info.plist" "$build/icon-info.plist" <<'PYICON'
+import plistlib, sys
+from pathlib import Path
+p = Path(sys.argv[1])
+info = plistlib.loads(p.read_bytes())
+info.update(plistlib.loads(Path(sys.argv[2]).read_bytes()))
+p.write_bytes(plistlib.dumps(info))
+PYICON
 "$runtime/dnscrypt-proxy" -config "$runtime/dnscrypt-proxy.toml" -check
 if [ -n "${SIGNING_IDENTITY:-}" ]; then
     sign=(/usr/bin/codesign --force --options runtime --timestamp --sign "$SIGNING_IDENTITY")

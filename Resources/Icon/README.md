@@ -10,7 +10,7 @@ To regenerate the app artwork and all ICNS sizes:
 python3 Resources/Icon/generate-app-icon.py
 ```
 
-`AppIcon.svg` and `AppIcon.png` are square 1024px white-on-black masters, with the unchanged logo filling 78% of the canvas. `AppIcon-macOS.svg` and `.png` provide a rounded black tile with transparent outer margins for the legacy ICNS format; the logo fills 80% of that tile. The generator uses the exact path from the original SVG. Update dialogs use this same app icon.
+`AppIcon.svg` and `AppIcon.png` are square 1024px white-on-black masters, with the unchanged logo filling 78% of the canvas. `AppIcon-macOS.svg` and `.png` use the identical opaque square artwork. Every ICNS representation has an edge-to-edge black background, with no inset tile, border, or transparent padding. The generator uses the exact path from the original SVG. Update dialogs use this same app icon.
 
 The normal build copies the generated resources and license, so ImageMagick is not required to build the app.
 
@@ -19,3 +19,5 @@ The normal build copies the generated resources and license, so ImageMagick is n
 ```sh
 magick -background none -density 288 Resources/Icon/vpn-lock.svg -resize 72x72 Resources/Icon/StatusTemplate.png
 ```
+
+The generator also creates `AppIcon.xcassets`. The build compiles it with Apple’s `actool` and merges its generated icon metadata into Info.plist. macOS uses this asset catalog instead of framing the standalone legacy ICNS. The native NSWorkspace icon lookup was verified without a pale border.

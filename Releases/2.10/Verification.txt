@@ -1,0 +1,20 @@
+Private DNS 2.10 verification
+Apple Silicon, macOS 27.0.1. October 5, 2026.
+
+Correction:
+The app icon and update-dialog artwork now use one fully opaque, edge-to-edge black square with the original white SVG logo enlarged to 800 pixels on a 1024-pixel canvas. No inset tile, pre-rounded background, border, or transparent padding. All ICNS resolutions derive from the same square master. Menu-bar and Details template icons are unchanged.
+
+Verification:
+All automated suites passed. A native AppKit verifier decoded every ICNS representation, checked every pixel for full opacity and every outer-edge pixel for black. A native NSAlert harness loaded the corrected artwork. The legacy ICNS still received a pale system frame despite opaque artwork. The corrected build compiles AppIcon.xcassets with actool and merges its generated Info.plist metadata. The native NSWorkspace icon lookup for a signed preview app then rendered the white logo on black without the pale frame. Apple Silicon app and helper targets compiled.
+
+Limitations:
+The installed app was not replaced; installation and the user's specific icon surface remain for user verification. macOS may cache previous artwork. This changes only icon assets and release metadata, with no DNS or VPN behavior changes.
+
+Final packaged app verification:
+The notarized controls ZIP was extracted to a fresh path. Native NSWorkspace icon lookup rendered the corrected icon without a pale frame; the render is included as Icon-Preview.png. The compiled AppIcon.icns passed the full-opacity and black-edge checks. Both extracted apps passed codesign and Gatekeeper checks.
+
+Apple notarization accepted:
+Installer: a9847922-62bf-47b5-9cd0-c78ad62274b2
+Controls: 5546b659-7306-4b23-9017-9322c3a0f221
+Uninstaller: 9c463cb8-a261-41d9-978b-87a4597d4a4f
+Tickets stapled and Gatekeeper assessments passed. Packaging emitted the previously observed “write: Permission denied” warnings despite success; their cause remains unconfirmed.

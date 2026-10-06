@@ -89,7 +89,7 @@ final class Service {
                 "tailscaleDNS": routing.tailscalePresent,
                 "tailscaleCoexistence": routing.tailscaleCoexistence,
                 "vpnCoexistence": routing.vpnCoexistence, "defaultDNSRoutes": routing.defaultRoutes,
-                "excludedServices": exclusions, "totalServices": list.count, "error": lastError, "provider": "Cloudflare", "version": "2.9"]
+                "excludedServices": exclusions, "totalServices": list.count, "error": lastError, "provider": "Cloudflare", "version": "2.10"]
     }
     func handle(_ command: String) -> [String: Any] {
         guard ["status", "on", "pause 900", "pause 3600", "pause reboot"].contains(command) else { return ["ok": false, "error": "Unsupported command."] }
