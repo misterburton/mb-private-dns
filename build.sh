@@ -33,7 +33,7 @@ cp "$src/Packaging/preinstall" "$src/Packaging/postinstall" "$scripts/"
 chmod 755 "$scripts/preinstall" "$scripts/postinstall" "$scripts/PrivateDNSService"
 chmod 755 "$app/Contents/MacOS/PrivateDNS" "$uninstaller/Contents/MacOS/UninstallPrivateDNS" "$uninstaller/Contents/MacOS/PrivateDNSService" "$runtime/dnscrypt-proxy"
 python3 "$src/Packaging/metadata.py" "$root" "$version"
-xcrun actool "$src/Resources/Icon/AppIcon.xcassets" --compile "$app/Contents/Resources" --platform macosx --minimum-deployment-target 13.0 --app-icon AppIcon --output-partial-info-plist "$build/icon-info.plist" --output-format human-readable-text
+xcrun actool "$src/Resources/Icon/AppIcon.icon" --compile "$app/Contents/Resources" --platform macosx --minimum-deployment-target 13.0 --app-icon AppIcon --output-partial-info-plist "$build/icon-info.plist" --output-format human-readable-text
 python3 - "$app/Contents/Info.plist" "$build/icon-info.plist" <<'PYICON'
 import plistlib, sys
 from pathlib import Path

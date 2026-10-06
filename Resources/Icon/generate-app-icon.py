@@ -22,13 +22,14 @@ for size in [16, 32, 128, 256, 512]:
         suffix = '@2x' if scale == 2 else ''
         subprocess.run(['magick', str(root / 'AppIcon-macOS.png'), '-resize', f'{size*scale}x{size*scale}', str(iconset / f'icon_{size}x{size}{suffix}.png')], check=True)
 subprocess.run(['iconutil', '-c', 'icns', str(iconset), '-o', str(root / 'PrivateDNS.icns')], check=True)
-catalog = root / 'AppIcon.xcassets/AppIcon.appiconset'
-catalog.mkdir(parents=True, exist_ok=True)
-images = []
-for size in [16, 32, 128, 256, 512]:
-    for scale in [1, 2]:
-        suffix = '@2x' if scale == 2 else ''
-        name = f'icon_{size}x{size}{suffix}.png'
-        shutil.copyfile(iconset / name, catalog / name)
-        images.append({'filename': name, 'idiom': 'mac', 'scale': f'{scale}x', 'size': f'{size}x{size}'})
-(catalog / 'Contents.json').write_text(json.dumps({'images': images, 'info': {'author': 'xcode', 'version': 1}}, indent=2) + '\n')
+modern = root / 'AppIcon.icon'
+(modern / 'Assets').mkdir(parents=True, exist_ok=True)
+shutil.copyfile(root / 'AppIcon.png', modern / 'Assets/Artwork.png')
+model = {
+    'fill': {'solid': 'srgb:0.00000,0.00000,0.00000,1.00000'},
+    'groups': [{'layers': [{'image-name': 'Artwork.png', 'name': 'Artwork', 'glass': False}],
+                'shadow': {'kind': 'neutral', 'opacity': 0}, 'specular': False,
+                'translucency': {'enabled': False, 'value': 0}}],
+    'supported-platforms': {'squares': 'shared'}
+}
+(modern / 'icon.json').write_text(json.dumps(model, indent=2) + '\n')

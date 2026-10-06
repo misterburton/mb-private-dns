@@ -20,4 +20,4 @@ The normal build copies the generated resources and license, so ImageMagick is n
 magick -background none -density 288 Resources/Icon/vpn-lock.svg -resize 72x72 Resources/Icon/StatusTemplate.png
 ```
 
-The generator also creates `AppIcon.xcassets`. The build compiles it with Apple’s `actool` and merges its generated icon metadata into Info.plist. macOS uses this asset catalog instead of framing the standalone legacy ICNS. The native NSWorkspace icon lookup was verified without a pale border.
+The generator also creates `AppIcon.icon`, with a solid black background, the unchanged opaque artwork, and glass/shadow/translucency effects disabled. The build compiles this modern icon package with Apple's `actool` and merges its generated icon metadata into Info.plist. This avoids the pale compatibility frame applied to legacy icons. The native macOS icon lookup is checked after its asynchronous rendering completes. macOS supplies the outer icon mask and its standard edge treatment.
