@@ -237,7 +237,7 @@ final class Controls: NSObject, NSApplicationDelegate {
             defer { updating = false; restoreUpdateMenu() }
             @MainActor func alert(_ title: String, _ message: String) -> NSAlert {
                 let alert = NSAlert(); alert.messageText = title; alert.informativeText = message
-                alert.icon = AppIcon.adaptive()
+                alert.icon = AppIcon.application()
                 NSApp.activate(ignoringOtherApps: true)
                 return alert
             }

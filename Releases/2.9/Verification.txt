@@ -1,0 +1,23 @@
+Private DNS 2.9 verification
+Apple Silicon, macOS 27.0.1. October 5, 2026.
+
+Icon update:
+The approved globe-and-lock SVG path is preserved. App artwork is white on black, with the glyph occupying 78% of the square 1024px master and 80% of the rounded macOS tile. The ICNS contains standard 16, 32, 128, 256 and 512 point representations at 1x and 2x. Update dialogs use the same app artwork. Details and menu-bar adaptive templates are unchanged. No DNS behavior changed.
+
+Verification:
+The complete automated suite passed. The actual controls loaded in an AppKit harness with the new bundled artwork, and the dialog artwork rendered in light and dark appearances. The icon was visually inspected. A native NSAlert preview confirmed crisp rendering from the 1024px PNG; the ICNS remains the Finder/app bundle icon. Apple Silicon targets compile. All ICNS sizes were generated with iconutil from the approved SVG and the bundled CFBundleIconFile continues to reference PrivateDNS.icns.
+
+The square master is included as AppIcon-1024.png and the legacy macOS tile as AppIcon-macOS.png. These are artwork exports, not an iOS app. The source SVGs and repeatable generator are in Resources/Icon.
+
+Limitations:
+The installed app was not replaced. Finder may retain the previous cached icon until macOS refreshes it. Live installation and the existing Palo Alto, exit-node, reboot and airplane Wi-Fi scenarios remain unverified. No VPN or DNS settings changed during this release.
+
+Design reference:
+https://developer.apple.com/design/human-interface-guidelines/app-icons/
+
+Apple notarization accepted:
+Installer: c767beef-e8f1-4f15-9e29-6e7ced4afea3
+Controls: 9e48c8b5-a612-4359-ab0e-d62e4c12e4e0
+Uninstaller: 56ae3766-c11d-4a62-809e-34ae0e7136fb
+Tickets stapled; Gatekeeper assessments passed. Final app ZIPs were independently extracted and signature/Gatekeeper verified. The packaged app's ICNS and full-resolution PNG match the approved source assets. All ten ICNS representations were decoded successfully.
+Packaging emitted the previously observed “write: Permission denied” warnings despite success. Signing, notarization and Gatekeeper checks passed; the warning cause remains unconfirmed.

@@ -32,3 +32,6 @@ Releases/2.7/*.zip
 
 Releases/2.8/*.pkg
 Releases/2.8/*.zip
+
+Releases/2.9/*.pkg
+Releases/2.9/*.zip

@@ -2,20 +2,15 @@
 
 Google Material Icons globe/lock SVG supplied and approved by the user. Distributed under Apache 2.0; see LICENSE.txt. The original path is preserved in vpn-lock.svg.
 
-padded.svg widens the viewBox to add space around the unchanged glyph. Template.png is a transparent 1024px render used by AppKit. In-app views use the system label color for light and dark appearances. PrivateDNS.icns supplies a black-on-white Finder icon for macOS 13 and later; Finder's icon is static, while in-app icons adapt to appearance.
+padded.svg widens the viewBox to add space around the unchanged glyph. Template.png is a transparent 1024px render used by AppKit. In-app views use the system label color for light and dark appearances. PrivateDNS.icns supplies a white-on-black app icon for macOS 13 and later. Details and menu-bar glyphs retain their adaptive template colors.
 
-To regenerate with ImageMagick and Apple's iconutil:
+To regenerate the app artwork and all ICNS sizes:
 
 ```sh
-magick -background none Resources/Icon/padded.svg Resources/Icon/Template.png
-mkdir -p build/PrivateDNS.iconset
-for size in 16 32 128 256 512; do
-  magick Resources/Icon/Template.png -background white -alpha remove -resize "${size}x${size}" "build/PrivateDNS.iconset/icon_${size}x${size}.png"
-  double=$((size * 2))
-  magick Resources/Icon/Template.png -background white -alpha remove -resize "${double}x${double}" "build/PrivateDNS.iconset/icon_${size}x${size}@2x.png"
-done
-iconutil -c icns build/PrivateDNS.iconset -o Resources/Icon/PrivateDNS.icns
+python3 Resources/Icon/generate-app-icon.py
 ```
+
+`AppIcon.svg` and `AppIcon.png` are square 1024px white-on-black masters, with the unchanged logo filling 78% of the canvas. `AppIcon-macOS.svg` and `.png` provide a rounded black tile with transparent outer margins for the legacy ICNS format; the logo fills 80% of that tile. The generator uses the exact path from the original SVG. Update dialogs use this same app icon.
 
 The normal build copies the generated resources and license, so ImageMagick is not required to build the app.
 
