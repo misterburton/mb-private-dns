@@ -7,6 +7,8 @@ import Cocoa
   precondition((c.badgeTimer != nil) == animated)
   for (mode,enabled) in [("on",true),("paused",false),("starting",true),("managed",true),("vpn-managed",true),("partial",true),("attention",true)] {
    c.show(["ok":true,"enabled":enabled,"healthy":true,"mode":mode])
+   precondition(c.status.button?.title == "" && c.status.button?.imagePosition == .imageOnly)
+   precondition(c.status.button?.accessibilityLabel()?.contains(c.headline.title) == true)
    let image = c.status.button!.image!
    precondition(image.isTemplate && image.size == NSSize(width:18,height:18))
    let pixels = NSBitmapImageRep(data:image.tiffRepresentation!)!

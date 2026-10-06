@@ -1,0 +1,16 @@
+Private DNS 2.12 verification
+
+Change:
+The menu-bar item shows only the approved state icon. All status text remains in the menu and tooltip. The accessibility label announces Private DNS and its current status.
+
+Validation:
+The full test.sh suite passed. Production AppKit controls loaded with bundled resources. All seven service modes have nonblank 18-point template icons, an empty menu-bar title, image-only positioning, and an accessibility label containing the current menu headline. Existing startup animation lifecycle, routing, updater, and service tests passed.
+
+Scope:
+No DNS, provider, installer, or icon artwork changes. The installed app was not replaced. Packaging may emit the previously observed 'write: Permission denied' warnings; signatures, notarization and Gatekeeper results are verified independently.
+
+Apple notarization accepted:
+Installer: af6fe4e5-293f-4426-98e8-d77b8a6bd9b9
+Controls: 7178e700-1295-475f-bc25-5150b2dd7741
+Uninstaller: 89c40c84-40e4-4f49-bd6a-dd4c4ec0b8ae
+Tickets stapled. Extracted controls and uninstaller passed signature and Gatekeeper checks.

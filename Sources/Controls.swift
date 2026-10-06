@@ -70,9 +70,10 @@ final class Controls: NSObject, NSApplicationDelegate {
         NSApp.setActivationPolicy(.accessory)
         signal(SIGPIPE, SIG_IGN)
         status = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        status.button?.title = "DoH"
         setBadge(.starting)
-        status.button?.imagePosition = .imageLeading
+        status.button?.title = ""
+        status.button?.imagePosition = .imageOnly
+        status.button?.setAccessibilityLabel("Private DNS: Checking DoH…")
         menu.autoenablesItems = false
         headline.isEnabled = false; detail.isEnabled = false
         menu.addItem(headline); menu.addItem(detail); menu.addItem(.separator())
@@ -103,11 +104,11 @@ final class Controls: NSObject, NSApplicationDelegate {
         let owner = value["dnsOwner"] as? String
         var message: String
         if value["ok"] as? Bool != true {
-            headline.title = "DoH needs attention"; status.button?.title = "DoH !"
+            headline.title = "DoH needs attention"
             detail.title = "Open Details for the service message"
             message = errorText.isEmpty ? "The DNS service could not be reached." : errorText
         } else if !enabled {
-            headline.title = "DoH is paused"; status.button?.title = "DoH Paused"
+            headline.title = "DoH is paused"
             if until > 0 {
                 let date = Date(timeIntervalSince1970: until)
                 let time = DateFormatter.localizedString(from: date, dateStyle: .none, timeStyle: .short)
@@ -115,12 +116,11 @@ final class Controls: NSObject, NSApplicationDelegate {
             } else { detail.title = "Resumes when you restart your Mac" }
             message = "Private DNS is paused. Your network or VPN controls DNS.\n\n\(detail.title). You can resume protection sooner from the DoH menu."
         } else if mode == "starting" {
-            headline.title = "Starting Private DNS…"; status.button?.title = "DoH Starting…"
+            headline.title = "Starting Private DNS…"
             detail.title = "Connecting to the encrypted resolver…"
             message = "Private DNS is starting and checking its encrypted resolver. Protection is not verified yet. This normally takes a few seconds; no action is needed. You can still pause protection to sign in to Wi-Fi."
         } else {
             headline.title = mode == "on" ? "DoH is on" : "DoH needs attention"
-            status.button?.title = mode == "on" ? "DoH On" : "DoH !"
             detail.title = healthy ? "Cloudflare • DNS over HTTPS" : "Encrypted resolver is not responding"
             message = healthy ? "Cloudflare DNS over HTTPS is configured and the local resolver is responding." : "DNS over HTTPS is configured, but the encrypted resolver isn't responding. Pause protection if you need to sign in to Wi-Fi."
             if let owner {
@@ -128,7 +128,6 @@ final class Controls: NSObject, NSApplicationDelegate {
                 case "vpn":
                     if mode == "vpn-managed" {
                         headline.title = "DNS managed by VPN"
-                        status.button?.title = "DNS VPN"
                     }
                     detail.title = healthy ? "Your VPN handles default DNS lookups" : "Private DNS resolver is not responding"
                     message = "macOS routes default DNS lookups through a VPN tunnel interface. Your VPN controls where those lookups go. Private DNS remains enabled, but those queries are outside its verified protection. This is an expected VPN configuration, not a reason to click Resume.\n\nPrivate DNS cannot verify the VPN's DNS provider or upstream encryption. It leaves VPN settings unchanged. When macOS routes DNS back to Private DNS, the status updates automatically."
@@ -136,7 +135,6 @@ final class Controls: NSObject, NSApplicationDelegate {
                 case "tailscale":
                     if mode == "managed" {
                         headline.title = "DNS managed by Tailscale"
-                        status.button?.title = "DNS Tailscale"
                     }
                     detail.title = "Tailscale upstream encryption is unverified"
                     message = "macOS lists Tailscale as its default DNS resolver. Private DNS remains enabled, but cannot verify which provider or encryption Tailscale uses upstream. This is not a claim that your public DNS is protected by Private DNS.\n\nTailscale can handle public lookups itself or through an exit node (another device that routes your internet traffic). Its presence alone does not prove those lookups use HTTPS. Private DNS leaves these settings unchanged."
@@ -182,7 +180,7 @@ final class Controls: NSObject, NSApplicationDelegate {
                 message += "\n\nDefault DNS servers reported by macOS:\n" + routes.joined(separator: "\n")
             }
             if mode == "partial" {
-                headline.title = "DoH is on with exclusions"; status.button?.title = "DoH Partial"
+                headline.title = "DoH is on with exclusions"
                 detail.title = "Custom DNS preserved • See Details"
             }
             let conflicts = value["conflicts"] as? [String] ?? []
@@ -205,6 +203,7 @@ final class Controls: NSObject, NSApplicationDelegate {
             }
         }
         setBadge(nextBadge)
+        status.button?.setAccessibilityLabel("Private DNS: \(headline.title). \(detail.title)")
         status.button?.toolTip = message
         summary = message + "\n\n" + """
         What is DoH?
