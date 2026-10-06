@@ -38,3 +38,7 @@ Releases/2.9/*.zip
 
 Releases/2.10/*.pkg
 Releases/2.10/*.zip
+
+Releases/2.11/*.pkg
+Releases/2.11/*.zip
+Releases/Design-Previews/

@@ -23,6 +23,26 @@ final class Controls: NSObject, NSApplicationDelegate {
     var lookupUpdate: @MainActor (String) async throws -> UpdateCandidate? = { try await Updates.check(current: $0) }
     var currentUpdateVersion: String { Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "unknown" }
     var attemptedStart = false
+    var badge: StatusBadge = .starting
+    var badgeTimer: Timer?
+    var badgeFrame = 0
+    lazy var loaderFrames = (0..<24).compactMap { AppIcon.statusBadge(.starting, frame: $0) }
+    func setBadge(_ next: StatusBadge) {
+        if next == badge && (next != .starting || badgeTimer != nil) && status.button?.image != nil { return }
+        badgeTimer?.invalidate(); badgeTimer = nil
+        badge = next; badgeFrame = 0
+        status.button?.image = AppIcon.statusBadge(next)
+        guard next == .starting, loaderFrames.count == 24,
+              !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion else { return }
+        let animation = Timer(timeInterval: 0.05, repeats: true) { [weak self] _ in
+            guard let self else { return }
+            self.badgeFrame = (self.badgeFrame + 1) % 24
+            self.status.button?.image = self.loaderFrames[self.badgeFrame]
+        }
+        badgeTimer = animation
+        RunLoop.main.add(animation, forMode: .common)
+    }
+    func applicationWillTerminate(_ notification: Notification) { badgeTimer?.invalidate() }
     var timer: Timer?
     var window: NSWindow?
     var scroll: NSScrollView?
@@ -51,7 +71,7 @@ final class Controls: NSObject, NSApplicationDelegate {
         signal(SIGPIPE, SIG_IGN)
         status = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         status.button?.title = "DoH"
-        status.button?.image = AppIcon.statusBar()
+        setBadge(.starting)
         status.button?.imagePosition = .imageLeading
         menu.autoenablesItems = false
         headline.isEnabled = false; detail.isEnabled = false
@@ -173,6 +193,18 @@ final class Controls: NSObject, NSApplicationDelegate {
             message += "\n\nKeep these settings if they are needed for your devices or work networks. Disabled services and services outside the current location are listed for reference."
         }
         message += "\n\nPrivate DNS re-enables at every restart. Timed pauses also expire while the controls are closed; after sleep, they expire when the service runs again. VPN DNS may still take priority."
+        let nextBadge: StatusBadge
+        if value["ok"] as? Bool != true { nextBadge = .attention }
+        else if !enabled { nextBadge = .paused }
+        else {
+            switch mode {
+            case "starting": nextBadge = .starting
+            case "on": nextBadge = .protected
+            case "managed", "vpn-managed", "partial": nextBadge = .routes
+            default: nextBadge = .attention
+            }
+        }
+        setBadge(nextBadge)
         status.button?.toolTip = message
         summary = message + "\n\n" + """
         What is DoH?

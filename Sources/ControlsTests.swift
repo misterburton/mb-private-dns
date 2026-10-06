@@ -121,6 +121,13 @@ import Cocoa
         precondition(scroll.contentView.bounds.origin.y == 0, "shorter contents must clamp the scroll position")
         controls.window?.close()
         print("PASS: Tailscale coexistence is informational; failures and exclusions remain visible; Details icon scrolls with text and refresh preserves reading position")
+        for (mode, enabled, expected) in [("on", true, StatusBadge.protected), ("paused", false, .paused), ("starting", true, .starting), ("managed", true, .routes), ("vpn-managed", true, .routes), ("partial", true, .routes), ("attention", true, .attention)] {
+            controls.show(["ok": true, "enabled": enabled, "healthy": true, "mode": mode])
+            precondition(controls.badge == expected)
+        }
+        controls.show(["ok": false, "enabled": false, "mode": "paused"])
+        precondition(controls.badge == .attention && controls.badgeTimer == nil)
+        print("PASS: all status badge mappings; service errors override paused state; loader stops outside startup")
         NSStatusBar.system.removeStatusItem(controls.status)
         print("PASS: AppKit app loads; managed, failed, split, unknown, paused and recovered menu states render without opening windows or changing DNS")
     }

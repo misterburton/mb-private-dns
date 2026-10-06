@@ -11,3 +11,8 @@ swiftc -D CONTROLS_TESTING "$src/Sources/Core.swift" "$src/Sources/AppIcon.swift
 "$build/ControlsTests"
 swiftc "$src/Sources/Core.swift" "$src/Sources/Updates.swift" "$src/Sources/UpdateTests.swift" -o "$build/UpdateTests" -framework SystemConfiguration
 "$build/UpdateTests" "$@"
+badge_app="$build/BadgeTests.app"
+mkdir -p "$badge_app/Contents/MacOS" "$badge_app/Contents/Resources"
+cp -R "$src/Resources/Icon/StatusBadges" "$badge_app/Contents/Resources/"
+swiftc -D CONTROLS_TESTING "$src/Sources/Core.swift" "$src/Sources/AppIcon.swift" "$src/Sources/Controls.swift" "$src/Sources/Updates.swift" "$src/Sources/BadgeTests.swift" -o "$badge_app/Contents/MacOS/BadgeTests" -framework SystemConfiguration -framework Cocoa
+"$badge_app/Contents/MacOS/BadgeTests"

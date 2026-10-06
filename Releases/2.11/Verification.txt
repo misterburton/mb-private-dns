@@ -1,0 +1,17 @@
+Private DNS 2.11 verification
+Apple Silicon, macOS 27.0.1.
+
+Changes:
+The approved globe remains fixed while its small badge communicates protected, paused, starting, alternate DNS routing, or needs-attention states. VPN, Tailscale, and partial coverage share routing arrows with their existing explanatory text. Startup uses 24 pre-rendered frames rotating around a fixed badge center, with no SVG transform performed at runtime. Routine health refreshes do not start animation. Reduce Motion uses a static startup arrow. App and Details artwork are unchanged.
+
+Checks:
+The full test.sh suite passed. The badge generator checks that every PNG has visible alpha coverage and that all 24 frames are identical outside the badge region. A bundled production-controls test verifies nonblank 18-point template icons for all seven service modes, animation advancement, preservation across startup polls, cancellation on recovery, and no animation during healthy refresh. The user approved the corrected local interactive preview.
+
+Scope and limitations:
+The installed app and DNS settings were not changed. This release does not alter DNS providers, routing, startup services, or installers. Actual installation and network transitions remain for user verification. Packaging still prints the previously observed four 'write: Permission denied' warnings; successful signatures, notarization, and Gatekeeper checks are verified separately.
+
+Apple notarization accepted:
+Installer: ee520d4e-76b7-475e-9936-4bd3f5be82ea
+Controls: e178cf91-51ca-4089-a831-bbb6f6c08235
+Uninstaller: 03ffa981-50de-45ec-98e3-c36a99eeb78d
+Tickets stapled. Extracted controls and uninstaller passed codesign and Gatekeeper assessments.
